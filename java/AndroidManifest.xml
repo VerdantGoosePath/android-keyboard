@@ -71,6 +71,13 @@
         -->
 
         <!-- Activities -->
+        <activity
+            android:name=".uix.actions.SaveSelectedTextActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
         <activity android:name=".uix.settings.SettingsActivity"
              android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
              android:icon="@mipmap/ic_launcher"

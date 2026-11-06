@@ -522,6 +522,9 @@ class UixActionKeyboardManager(val uixManager: UixManager, val latinIME: LatinIM
         uixManager.dismissQuickClips()
     }
 
+    override fun getSelectedText(): String? =
+        runCatching { latinIME.currentInputConnection?.getSelectedText(0)?.toString() }.getOrNull()
+
     override fun getSizingCalculator(): KeyboardSizingCalculator =
         latinIME.sizingCalculator
 

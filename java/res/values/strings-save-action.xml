@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="action_save_title">Save</string>
+    <string name="action_save_no_selection">Select text to save</string>
+    <string name="action_save_success">Text saved</string>
+    <string name="action_save_failed">Could not save selected text</string>
+</resources>
