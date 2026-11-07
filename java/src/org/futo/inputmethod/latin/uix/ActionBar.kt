@@ -184,6 +184,22 @@ val ActionBarExpanded = SettingsKey(
     false
 )
 
+/**
+ * What to do with the favourites bar when the system shows the keyboard.
+ * KEEP_LAST_STATE preserves the current behaviour: manual chevron toggles remain
+ * saved in ActionBarExpanded and restored when the keyboard service is recreated.
+ */
+object FavoriteActionsBarOnOpen {
+    const val KEEP_LAST_STATE = 0
+    const val HIDDEN = 1
+    const val SHOWN = 2
+}
+
+val FavoriteActionsBarOnOpenSetting = SettingsKey(
+    intPreferencesKey("favorite_actions_bar_on_open"),
+    FavoriteActionsBarOnOpen.KEEP_LAST_STATE
+)
+
 val OldStyleActionsBar = SettingsKey(
     booleanPreferencesKey("oldActionBar"),
     false

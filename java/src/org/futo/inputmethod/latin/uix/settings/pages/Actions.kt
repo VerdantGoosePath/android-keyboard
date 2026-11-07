@@ -8,6 +8,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import org.futo.inputmethod.latin.R
+import org.futo.inputmethod.latin.uix.FavoriteActionsBarOnOpen
+import org.futo.inputmethod.latin.uix.FavoriteActionsBarOnOpenSetting
 import org.futo.inputmethod.latin.uix.actions.ActionCategory
 import org.futo.inputmethod.latin.uix.actions.ActionsEditor
 import org.futo.inputmethod.latin.uix.actions.ActionsSettings
@@ -19,11 +21,13 @@ import org.futo.inputmethod.latin.uix.actions.toActionEditorItems
 import org.futo.inputmethod.latin.uix.actions.toActionMap
 import org.futo.inputmethod.latin.uix.actions.updateSettingsWithNewActions
 import org.futo.inputmethod.latin.uix.getSetting
+import org.futo.inputmethod.latin.uix.settings.DropDownPickerSettingItem
 import org.futo.inputmethod.latin.uix.settings.NavigationItemStyle
 import org.futo.inputmethod.latin.uix.settings.ScreenTitle
 import org.futo.inputmethod.latin.uix.settings.SettingToggleRaw
 import org.futo.inputmethod.latin.uix.settings.UserSetting
 import org.futo.inputmethod.latin.uix.settings.UserSettingsMenu
+import org.futo.inputmethod.latin.uix.settings.useDataStore
 import org.futo.inputmethod.latin.uix.settings.useDataStoreValue
 import org.futo.inputmethod.latin.uix.settings.userSettingDecorationOnly
 import org.futo.inputmethod.latin.uix.settings.userSettingNavigationItem
@@ -145,6 +149,30 @@ val ActionsScreen = UserSettingsMenu(
 
                     context.updateSettingsWithNewActions(actionMap)
                 }
+            )
+        },
+
+        UserSetting(
+            name = R.string.action_settings_favorites_bar_on_open,
+            subtitle = R.string.action_settings_favorites_bar_on_open_subtitle,
+        ) {
+            val setting = useDataStore(FavoriteActionsBarOnOpenSetting)
+            val labels = mapOf(
+                FavoriteActionsBarOnOpen.HIDDEN to stringResource(R.string.action_settings_favorites_bar_hidden),
+                FavoriteActionsBarOnOpen.SHOWN to stringResource(R.string.action_settings_favorites_bar_shown),
+                FavoriteActionsBarOnOpen.KEEP_LAST_STATE to stringResource(R.string.action_settings_favorites_bar_remember),
+            )
+
+            DropDownPickerSettingItem(
+                label = stringResource(R.string.action_settings_favorites_bar_on_open),
+                options = listOf(
+                    FavoriteActionsBarOnOpen.HIDDEN,
+                    FavoriteActionsBarOnOpen.SHOWN,
+                    FavoriteActionsBarOnOpen.KEEP_LAST_STATE,
+                ),
+                selection = setting.value,
+                onSet = { setting.setValue(it) },
+                getDisplayName = { labels[it] ?: "?" },
             )
         },
 

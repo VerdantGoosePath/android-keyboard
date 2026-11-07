@@ -654,6 +654,7 @@ class LatinIME : InputMethodServiceCompose(), LatinIMELegacy.SuggestionStripCont
     override fun onWindowShown() {
         super.onWindowShown()
         latinIMELegacy.onWindowShown()
+        uixManager.onKeyboardWindowShown()
         updateColorsIfDynamicChanged()
     }
 

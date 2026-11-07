@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="action_settings_favorites_bar_on_open">Favourites bar when keyboard opens</string>
+    <string name="action_settings_favorites_bar_on_open_subtitle">Choose whether the favourites bar is initially hidden, shown, or remembers its last state</string>
+    <string name="action_settings_favorites_bar_hidden">Hidden</string>
+    <string name="action_settings_favorites_bar_shown">Shown</string>
+    <string name="action_settings_favorites_bar_remember">Remember last state</string>
+</resources>

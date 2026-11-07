@@ -619,14 +619,29 @@ class UixManager(private val latinIME: LatinIME) {
     private var inlineStuffHiddenByTyping = mutableStateOf(false)
 
     private var isActionsExpanded = mutableStateOf(false)
-    private fun toggleActionsExpanded() {
-        isActionsExpanded.value = !isActionsExpanded.value
-        latinIME.deferSetSetting(latinIME, ActionBarExpanded, isActionsExpanded.value)
+
+    private fun setActionsExpanded(expanded: Boolean) {
+        if (isActionsExpanded.value == expanded) return
+        isActionsExpanded.value = expanded
+        latinIME.deferSetSetting(latinIME, ActionBarExpanded, expanded)
 
         // invalidation strangeness (needs fixing)
         if(ATLCompat.IsATL) latinIME.invalidateKeyboard(true)
     }
 
+    private fun toggleActionsExpanded() {
+        setActionsExpanded(!isActionsExpanded.value)
+    }
+
+    /** Apply the configured opening state once when the IME window becomes visible. */
+    fun onKeyboardWindowShown() {
+        when (latinIME.getSetting(FavoriteActionsBarOnOpenSetting)) {
+            FavoriteActionsBarOnOpen.HIDDEN -> setActionsExpanded(false)
+            FavoriteActionsBarOnOpen.SHOWN -> setActionsExpanded(true)
+            // Leave the state (including the persisted last toggle) untouched.
+            else -> Unit
+        }
+    }
 
     val actionsExpanded: Boolean
         get() = isActionsExpanded.value
