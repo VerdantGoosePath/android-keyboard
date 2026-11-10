@@ -96,7 +96,7 @@ fun ProgrammerModeSettings(navController: NavHostController) {
     val latestLayout by rememberUpdatedState(layout)
     DisposableEffect(Unit) {
         onDispose {
-            context.setSettingBlocking(ProgrammerLayoutSetting, encodeProgrammerLayout(latestLayout))
+            context.setSettingBlocking(ProgrammerLayoutSetting.key, encodeProgrammerLayout(latestLayout))
         }
     }
 
@@ -165,7 +165,7 @@ fun ProgrammerModeSettings(navController: NavHostController) {
                 )
                 Button(
                     onClick = {
-                        context.setSettingBlocking(ProgrammerLayoutSetting, encodeProgrammerLayout(layout))
+                        context.setSettingBlocking(ProgrammerLayoutSetting.key, encodeProgrammerLayout(layout))
                         selected = key.id
                         navController.navigate("programmerMode/key/${key.id}")
                     },
@@ -236,7 +236,7 @@ fun ProgrammerKeySettings(navController: NavHostController, id: String) {
     val latestLayout by rememberUpdatedState(layout)
     DisposableEffect(Unit) {
         onDispose {
-            context.setSettingBlocking(ProgrammerLayoutSetting, encodeProgrammerLayout(latestLayout))
+            context.setSettingBlocking(ProgrammerLayoutSetting.key, encodeProgrammerLayout(latestLayout))
         }
     }
 
