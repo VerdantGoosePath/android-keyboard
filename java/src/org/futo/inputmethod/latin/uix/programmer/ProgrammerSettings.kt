@@ -24,7 +24,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,6 +47,7 @@ import org.futo.inputmethod.latin.uix.settings.ScrollableList
 import org.futo.inputmethod.latin.uix.settings.SettingToggleRaw
 import org.futo.inputmethod.latin.uix.settings.useDataStore
 import org.futo.inputmethod.latin.uix.settings.useDataStoreValue
+import org.futo.inputmethod.latin.uix.setSettingBlocking
 import java.util.UUID
 import kotlin.math.abs
 
@@ -89,6 +92,13 @@ fun ProgrammerModeSettings(navController: NavHostController) {
     val style = useDataStore(ProgrammerKeyStyle)
     val autoRelease = useDataStore(ProgrammerAutoRelease)
     val enabled = useDataStore(ProgrammerModeEnabled)
+    val context = LocalContext.current
+    val latestLayout by rememberUpdatedState(layout)
+    DisposableEffect(Unit) {
+        onDispose {
+            context.setSettingBlocking(ProgrammerLayoutSetting, encodeProgrammerLayout(latestLayout))
+        }
+    }
 
     fun update(newLayout: ProgrammerLayout) {
         layout = newLayout
@@ -128,7 +138,7 @@ fun ProgrammerModeSettings(navController: NavHostController) {
                     contentDescription = stringResource(R.string.programmer_mode_reorder),
                     modifier = Modifier
                         .size(42.dp)
-                        .pointerInput(key.id, index) {
+                        .pointerInput(key.id) {
                             val threshold = with(density) { 35.dp.toPx() }
                             detectDragGestures(
                                 onDragEnd = { dragDistance = 0f },
@@ -137,11 +147,12 @@ fun ProgrammerModeSettings(navController: NavHostController) {
                                     change.consume()
                                     dragDistance += drag.y
                                     if(abs(dragDistance) > threshold) {
-                                        val next = index + if(dragDistance > 0f) 1 else -1
-                                        if(next in layout.keys.indices) {
-                                            val reordered = layout.keys.toMutableList()
-                                            reordered.add(next, reordered.removeAt(index))
-                                            update(layout.copy(keys = reordered))
+                                        val currentIndex = latestLayout.keys.indexOfFirst { it.id == key.id }
+                                        val next = currentIndex + if(dragDistance > 0f) 1 else -1
+                                        if(currentIndex >= 0 && next in latestLayout.keys.indices) {
+                                            val reordered = latestLayout.keys.toMutableList()
+                                            reordered.add(next, reordered.removeAt(currentIndex))
+                                            update(latestLayout.copy(keys = reordered))
                                             selected = key.id
                                         }
                                         dragDistance = 0f
@@ -154,6 +165,7 @@ fun ProgrammerModeSettings(navController: NavHostController) {
                 )
                 Button(
                     onClick = {
+                        context.setSettingBlocking(ProgrammerLayoutSetting, encodeProgrammerLayout(layout))
                         selected = key.id
                         navController.navigate("programmerMode/key/${key.id}")
                     },
@@ -220,6 +232,13 @@ fun ProgrammerKeySettings(navController: NavHostController, id: String) {
     var layout by remember { mutableStateOf(decodeProgrammerLayout(saved.value)) }
     val style = useDataStoreValue(ProgrammerKeyStyle)
     val key = layout.keys.firstOrNull { it.id == id }
+    val context = LocalContext.current
+    val latestLayout by rememberUpdatedState(layout)
+    DisposableEffect(Unit) {
+        onDispose {
+            context.setSettingBlocking(ProgrammerLayoutSetting, encodeProgrammerLayout(latestLayout))
+        }
+    }
 
     fun updateKey(replacement: ProgrammerKey) {
         val changed = layout.copy(keys = layout.keys.map { if(it.id == id) replacement else it })
