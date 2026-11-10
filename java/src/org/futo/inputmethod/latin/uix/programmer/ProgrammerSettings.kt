@@ -186,7 +186,22 @@ fun ProgrammerModeSettings(navController: NavHostController) {
                     },
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text(key.displayLabel().ifBlank { typeName(key.type) }, maxLines = 1)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(key.displayLabel().ifBlank { typeName(key.type) }, maxLines = 1)
+                        Text(
+                            buildString {
+                                append(typeName(key.type))
+                                when(key.type) {
+                                    ProgrammerKeyType.Tab -> append(if(key.tabSpaces == 0) " · Tab" else " · ${key.tabSpaces} spaces")
+                                    ProgrammerKeyType.Action -> if(key.value.isNotBlank()) append(" · ${key.value}")
+                                    ProgrammerKeyType.Text -> if(key.value.isNotBlank()) append(" · ${key.value.take(24)}")
+                                    else -> Unit
+                                }
+                            },
+                            maxLines = 1,
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
                 }
                 IconButton(onClick = {
                     update(layout.copy(keys = layout.keys.filterNot { it.id == key.id }))
