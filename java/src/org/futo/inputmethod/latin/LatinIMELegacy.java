@@ -730,6 +730,9 @@ public class LatinIMELegacy implements KeyboardActionListener,
     // This method is public for testability of LatinIME, but also in the future it should
     // completely replace #onCodeInput.
     public void onEvent(@Nonnull final Event event) {
+        if (getLatinIME().getUixManager().onProgrammerKeyEvent(event)) {
+            return;
+        }
         if (Constants.CODE_SHORTCUT == event.mKeyCode) {
             getLatinIME().trySwitchToShortcutIMEorInternal();
         }
@@ -763,12 +766,14 @@ public class LatinIMELegacy implements KeyboardActionListener,
     // Called from PointerTracker through the KeyboardActionListener interface
     @Override
     public void onTextInput(final String rawText) {
+        if (getLatinIME().getUixManager().onProgrammerTextEvent(rawText)) return;
         final Event event = Event.createSoftwareTextEvent(rawText, Constants.CODE_OUTPUT_TEXT);
         getActiveIME().onEvent(event);
         mKeyboardSwitcher.onEvent(event, getCurrentAutoCapsState());
     }
 
     public void onTextInputWithSpace(final String rawText) {
+        if (getLatinIME().getUixManager().onProgrammerTextEvent(rawText)) return;
         final Event event = Event.createSoftwareTextEvent(rawText, Constants.CODE_OUTPUT_TEXT_WITH_SPACES);
         getActiveIME().onEvent(event);
         mKeyboardSwitcher.onEvent(event, getCurrentAutoCapsState());
