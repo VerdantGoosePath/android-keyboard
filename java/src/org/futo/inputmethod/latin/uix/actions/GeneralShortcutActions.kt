@@ -14,14 +14,14 @@ val SelectAllAction = Action(
 )
 
 val SelectWordAction = Action(
-    icon = R.drawable.type,
+    icon = R.drawable.whole_word,
     name = R.string.action_select_word_title,
     simplePressImpl = { manager, _ -> manager.selectWord() },
     windowImpl = null,
 )
 
 val SelectLineAction = Action(
-    icon = R.drawable.file_text,
+    icon = R.drawable.square_dashed_text,
     name = R.string.action_select_line_title,
     simplePressImpl = { manager, _ -> manager.selectLine() },
     windowImpl = null,
