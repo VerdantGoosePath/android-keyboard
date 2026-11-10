@@ -47,6 +47,8 @@ val AllActionsMap = mapOf(
     "right" to ArrowRightAction,
     "font_typer" to FontTyperAction,
     "save" to SaveAction,
+    "select_word" to SelectWordAction,
+    "select_line" to SelectLineAction,
     "smart_formatting" to SmartFormattingAction,
     "indent" to IndentAction,
     "deindent" to DeindentAction,

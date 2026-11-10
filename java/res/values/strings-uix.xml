@@ -3,6 +3,8 @@
     <!-- Keyboard actions -->
     <string name="action_theme_switcher_title">Theme Switcher</string>
     <string name="action_select_all_title">Select All</string>
+    <string name="action_select_word_title">Select Word</string>
+    <string name="action_select_line_title">Select Line</string>
     <string name="action_cut_title">Cut to Clipboard</string>
     <string name="action_copy_title">Copy to Clipboard</string>
     <string name="action_paste_title">Paste from Clipboard</string>

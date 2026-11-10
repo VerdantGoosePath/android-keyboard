@@ -2,7 +2,7 @@ name: Signed stable release APK
 
 on:
   push:
-    branches: [master, 'feature/smart-formatting']
+    branches: [master, feature/select-word-and-line-actions, 'feature/smart-formatting']
   workflow_dispatch:
 
 permissions:

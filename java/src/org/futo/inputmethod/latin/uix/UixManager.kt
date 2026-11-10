@@ -15,6 +15,7 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.ExtractedTextRequest
 import android.view.inputmethod.InlineSuggestionsResponse
 import android.view.inputmethod.InputConnection
 import android.widget.Toast
@@ -124,6 +125,9 @@ import org.futo.inputmethod.latin.smartformatting.SmartFormattingSession
 import org.futo.inputmethod.latin.suggestions.SuggestionStripViewListener
 import org.futo.inputmethod.latin.uix.actions.ActionEditor
 import org.futo.inputmethod.latin.uix.actions.ActionRegistry
+import org.futo.inputmethod.latin.uix.actions.TextSelectionBounds
+import org.futo.inputmethod.latin.uix.actions.findLineSelectionBounds
+import org.futo.inputmethod.latin.uix.actions.findWordSelectionBounds
 import org.futo.inputmethod.latin.uix.actions.AllActions
 import org.futo.inputmethod.latin.uix.actions.BugViewerAction
 import org.futo.inputmethod.latin.uix.actions.BugViewerState
@@ -433,6 +437,65 @@ class UixActionKeyboardManager(val uixManager: UixManager, val latinIME: LatinIM
             Settings.getInstance().current
         ).onMovePointer( 1, stepOverWords, select)
         //latinIME.inputLogic.cursorRight(steps, stepOverWords, select)
+    }
+
+
+    private data class CursorText(
+        val text: String,
+        val cursor: Int,
+        val offset: Int,
+        val truncatedBefore: Boolean,
+        val truncatedAfter: Boolean,
+    )
+
+    private fun selectTextAtCursor(findBounds: (String, Int) -> TextSelectionBounds?) {
+        val connection = latinIME.currentInputConnection ?: return
+
+        val snapshot = runCatching {
+            val extracted = connection.getExtractedText(ExtractedTextRequest(), 0)
+            if (extracted?.text != null && extracted.startOffset >= 0 &&
+                extracted.selectionEnd in 0..extracted.text.length) {
+                CursorText(
+                    extracted.text.toString(),
+                    extracted.selectionEnd,
+                    extracted.startOffset,
+                    extracted.startOffset > 0,
+                    false,
+                )
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                // Some editors only support the surrounding-text API.
+                val surrounding = connection.getSurroundingText(8192, 8192, 0)
+                if (surrounding != null && surrounding.offset >= 0 &&
+                    surrounding.selectionEnd in 0..surrounding.text.length) {
+                    CursorText(
+                        surrounding.text.toString(),
+                        surrounding.selectionEnd,
+                        surrounding.offset,
+                        surrounding.offset > 0,
+                        surrounding.text.length - surrounding.selectionEnd >= 8192,
+                    )
+                } else null
+            } else null
+        }.getOrNull() ?: return
+
+        val bounds = findBounds(snapshot.text, snapshot.cursor) ?: return
+        // Never select a partial word or line when an editor truncates its text snapshot.
+        if (bounds.start == 0 && snapshot.truncatedBefore) return
+        if (bounds.end == snapshot.text.length && snapshot.truncatedAfter) return
+        if (bounds.start == bounds.end) return
+
+        runCatching {
+            connection.setSelection(snapshot.offset + bounds.start, snapshot.offset + bounds.end)
+        }
+    }
+
+    override fun selectWord() {
+        val locale = getActiveLocales().firstOrNull() ?: java.util.Locale.getDefault()
+        selectTextAtCursor { text, cursor -> findWordSelectionBounds(text, cursor, locale) }
+    }
+
+    override fun selectLine() {
+        selectTextAtCursor(::findLineSelectionBounds)
     }
 
     override fun performHapticAndAudioFeedback(code: Int, view: View) {
