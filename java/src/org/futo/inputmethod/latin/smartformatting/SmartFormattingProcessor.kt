@@ -42,9 +42,37 @@ object SmartFormattingProcessor {
         }
     }
 
+    /**
+     * Handle indentation shortcuts before InputLogic can turn two spaces into a period.
+     * Only run at the end of a logical line with a collapsed selection.
+     */
+    private fun shortcutBefore(event: Event, connection: RichInputConnection, context: Context): Boolean {
+        val code = event.mCodePoint
+        if (code != ' '.code && code != '-'.code) return false
+        val cursor = connection.mExpectedSelStart
+        if (cursor < 0 || cursor != connection.mExpectedSelEnd) return false
+        val after = connection.getTextAfterCursor(1, 0)?.firstOrNull()
+        if (after != null && after != '\n' && after != '\r') return false
+        val before = connection.getTextBeforeCursor(4096, 0)?.toString() ?: return false
+        val line = before.substringAfterLast('\n').substringAfterLast('\r')
+        val rewrite = listShortcutRewrite(
+            line + code.toChar(), context.getSetting(SmartFormattingSettings.spacesPerTab),
+            context.getSetting(SmartFormattingSettings.indentShortcut),
+            context.getSetting(SmartFormattingSettings.deindentShortcut)
+        ) ?: return false
+        val start = cursor - line.length
+        if (!connection.setSelection(start, cursor)) return false
+        connection.commitText(rewrite.text, 1)
+        connection.send()
+        connection.setSelection(start + rewrite.text.length, start + rewrite.text.length)
+        return true
+    }
+
     /** Skip an existing matching closing delimiter instead of typing a duplicate. */
     fun before(event: Event, connection: RichInputConnection, context: Context): Boolean {
-        if (!SmartFormattingSession.enabled || !keypress(event) || !canSkip(event.mCodePoint, context)) return false
+        if (!SmartFormattingSession.enabled || !keypress(event)) return false
+        if (shortcutBefore(event, connection, context)) return true
+        if (!canSkip(event.mCodePoint, context)) return false
         val cursor = connection.mExpectedSelStart
         if (cursor < 0 || cursor != connection.mExpectedSelEnd) return false
         val next = connection.getTextAfterCursor(1, 0)?.firstOrNull() ?: return false
@@ -83,6 +111,7 @@ object SmartFormattingProcessor {
                     val start = cursor - line.length
                     if (connection.setSelection(start, cursor)) {
                         connection.commitText(rewrite.text, 1)
+                        connection.send()
                         connection.setSelection(start + rewrite.text.length, start + rewrite.text.length)
                     }
                     return
@@ -98,6 +127,7 @@ object SmartFormattingProcessor {
             beforeText.length > 1 && beforeText[beforeText.lastIndex - 1].isLetterOrDigit()) return
         if (connection.getTextAfterCursor(1, 0)?.toString()?.startsWith(closing) == true) return
         connection.commitText(closing, 1)
+        connection.send()
         connection.setSelection(cursor, cursor)
     }
 
@@ -110,6 +140,7 @@ object SmartFormattingProcessor {
         val tag = closingTag(before, after, html, bbcode) ?: return
         val position = connection.mExpectedSelStart
         connection.commitText(tag, 1)
+        connection.send()
         connection.setSelection(position, position)
     }
 }

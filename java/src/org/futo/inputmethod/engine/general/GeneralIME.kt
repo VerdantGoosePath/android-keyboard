@@ -374,6 +374,7 @@ class GeneralIME(val helper: IMEHelper) : IMEInterface, WordLearner, SuggestionS
 
         inputLogic.mConnection.send()
         SmartFormattingProcessor.after(event, cursorBefore, inputLogic.mConnection, context)
+        inputLogic.mConnection.send()
 
         val cursorAfter = inputLogic.mConnection.mExpectedSelStart
 

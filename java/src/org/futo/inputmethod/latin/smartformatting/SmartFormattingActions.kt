@@ -1,6 +1,7 @@
 package org.futo.inputmethod.latin.smartformatting
 
 import android.os.Build
+import android.widget.Toast
 import android.view.inputmethod.ExtractedTextRequest
 import org.futo.inputmethod.latin.LatinIME
 import org.futo.inputmethod.latin.R
@@ -67,7 +68,15 @@ val SmartFormattingAction = Action(
     icon = R.drawable.type,
     name = R.string.smart_formatting_action_title,
     simplePressImpl = { manager, _ ->
-        (manager.getContext() as? LatinIME)?.let { SmartFormattingSession.toggle(it) }
+        (manager.getContext() as? LatinIME)?.let {
+            SmartFormattingSession.toggle(it)
+            Toast.makeText(
+                it,
+                if (SmartFormattingSession.enabled) R.string.smart_formatting_now_enabled
+                else R.string.smart_formatting_now_disabled,
+                Toast.LENGTH_SHORT
+            ).show()
+        }
     },
     windowImpl = null,
 )

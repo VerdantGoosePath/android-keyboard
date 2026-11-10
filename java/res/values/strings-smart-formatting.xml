@@ -3,6 +3,8 @@
     <string name="smart_formatting_settings_title">Smart Formatting</string>
     <string name="smart_formatting_settings_subtitle">Automatic Markdown lists, indentation and closing pairs</string>
     <string name="smart_formatting_action_title">Smart Formatting</string>
+    <string name="smart_formatting_now_enabled">Smart Formatting enabled</string>
+    <string name="smart_formatting_now_disabled">Smart Formatting disabled</string>
     <string name="smart_formatting_indent_action">Indent</string>
     <string name="smart_formatting_deindent_action">Deindent</string>
     <string name="smart_formatting_startup">When keyboard opens</string>
