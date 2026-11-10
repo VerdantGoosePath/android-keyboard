@@ -41,6 +41,7 @@ import org.futo.inputmethod.latin.common.Constants
 import org.futo.inputmethod.latin.common.InputPointers
 import org.futo.inputmethod.latin.inputlogic.InputLogic
 import org.futo.inputmethod.latin.settings.Settings
+import org.futo.inputmethod.latin.smartformatting.SmartFormattingProcessor
 import org.futo.inputmethod.latin.suggestions.SuggestionStripViewAccessor
 import org.futo.inputmethod.latin.uix.SettingsKey
 import org.futo.inputmethod.latin.uix.actions.throwIfDebug
@@ -315,6 +316,7 @@ class GeneralIME(val helper: IMEHelper) : IMEInterface, WordLearner, SuggestionS
         helper.requestCursorUpdate()
 
         val cursorBefore = inputLogic.mConnection.mExpectedSelStart
+        if (SmartFormattingProcessor.before(event, inputLogic.mConnection, context)) return
 
         val inputTransaction = when (event.eventType) {
             Event.EVENT_TYPE_INPUT_KEYPRESS,
@@ -371,6 +373,7 @@ class GeneralIME(val helper: IMEHelper) : IMEInterface, WordLearner, SuggestionS
         }
 
         inputLogic.mConnection.send()
+        SmartFormattingProcessor.after(event, cursorBefore, inputLogic.mConnection, context)
 
         val cursorAfter = inputLogic.mConnection.mExpectedSelStart
 

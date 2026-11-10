@@ -2,7 +2,7 @@ name: Signed stable release APK
 
 on:
   push:
-    branches: [master]
+    branches: [master, 'feature/smart-formatting']
   workflow_dispatch:
 
 permissions:
@@ -19,7 +19,7 @@ jobs:
     env:
       VERSION_CODE: ${{ github.run_number }}
       VERSION_NAME: 0.0.0-ci-${{ github.run_number }}
-      BRANCH_NAME: master
+      BRANCH_NAME: feature/smart-formatting
 
     steps:
       - name: Checkout with required submodules

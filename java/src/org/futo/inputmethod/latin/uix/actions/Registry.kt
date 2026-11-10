@@ -9,6 +9,9 @@ import org.futo.inputmethod.keyboard.internal.KeyboardCodesSet
 import org.futo.inputmethod.latin.R
 import org.futo.inputmethod.latin.common.Constants
 import org.futo.inputmethod.latin.settings.Settings
+import org.futo.inputmethod.latin.smartformatting.SmartFormattingAction
+import org.futo.inputmethod.latin.smartformatting.IndentAction
+import org.futo.inputmethod.latin.smartformatting.DeindentAction
 import org.futo.inputmethod.latin.uix.Action
 import org.futo.inputmethod.latin.uix.PreferenceUtils
 import org.futo.inputmethod.latin.uix.SettingsKey
@@ -44,6 +47,9 @@ val AllActionsMap = mapOf(
     "right" to ArrowRightAction,
     "font_typer" to FontTyperAction,
     "save" to SaveAction,
+    "smart_formatting" to SmartFormattingAction,
+    "indent" to IndentAction,
+    "deindent" to DeindentAction,
 )
 
 val ActionToId = AllActionsMap.entries.associate { it.value to it.key }
