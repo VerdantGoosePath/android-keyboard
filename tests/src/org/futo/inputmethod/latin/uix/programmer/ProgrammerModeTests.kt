@@ -116,6 +116,12 @@ class ProgrammerModeTests : AndroidTestCase() {
     }
 
     fun testLetterAndNumberKeycodes() {
+        assertEquals(KeyEvent.KEYCODE_SLASH, keyCodeForCodePoint('/'.code)?.first)
+        assertEquals(KeyEvent.KEYCODE_LEFT_BRACKET, keyCodeForCodePoint('['.code)?.first)
+        assertEquals(KeyEvent.KEYCODE_BACKSLASH, keyCodeForCodePoint('\\'.code)?.first)
+        val shifted = keyCodeForCodePoint('{'.code)
+        assertEquals(KeyEvent.KEYCODE_LEFT_BRACKET, shifted?.first)
+        assertTrue(shifted!!.second and KeyEvent.META_SHIFT_ON != 0)
         assertEquals(KeyEvent.KEYCODE_F, keyCodeForCodePoint('f'.code)?.first)
         assertEquals(KeyEvent.KEYCODE_Z, keyCodeForCodePoint('Z'.code)?.first)
         assertEquals(KeyEvent.KEYCODE_7, keyCodeForCodePoint('7'.code)?.first)
