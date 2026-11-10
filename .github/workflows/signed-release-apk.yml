@@ -2,7 +2,7 @@ name: Signed stable release APK
 
 on:
   push:
-    branches: [master]
+    branches: [master, feature/select-word-and-line-actions]
   workflow_dispatch:
 
 permissions:
