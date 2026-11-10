@@ -1427,6 +1427,7 @@ class UixManager(private val latinIME: LatinIME) {
                             keys = decodeProgrammerLayout(programmerLayout).keys,
                             style = programmerStyle,
                             modifiers = programmerModifiers,
+                            modifier = Modifier.safeKeyboardPadding(),
                             onKey = { key ->
                                 composeView?.let {
                                     keyboardManagerForAction.performHapticAndAudioFeedback(Constants.CODE_TAB, it)
