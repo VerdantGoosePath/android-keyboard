@@ -15,6 +15,7 @@ import kotlinx.serialization.Serializable
 import org.futo.inputmethod.engine.IMESettingsMenu
 import org.futo.inputmethod.engine.SettingsByLanguage
 import org.futo.inputmethod.latin.toLocale
+import org.futo.inputmethod.latin.smartformatting.SmartFormattingMenu
 import org.futo.inputmethod.latin.uix.ErrorDialog
 import org.futo.inputmethod.latin.uix.InfoDialog
 import org.futo.inputmethod.latin.uix.LocalNavController
@@ -100,6 +101,7 @@ val SettingsMenus = listOf(
     KeyboardSettingsMenu,
     NumberRowSettingMenu,
     TypingSettingsMenu,
+    SmartFormattingMenu,
     ResizeMenuLite,
     LongPressMenu,
     SwipeMenu,

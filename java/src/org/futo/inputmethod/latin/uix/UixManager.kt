@@ -121,6 +121,7 @@ import org.futo.inputmethod.latin.SuggestedWords.SuggestedWordInfo
 import org.futo.inputmethod.latin.SupportsNavbarExtension
 import org.futo.inputmethod.latin.common.Constants
 import org.futo.inputmethod.latin.settings.Settings
+import org.futo.inputmethod.latin.smartformatting.SmartFormattingSession
 import org.futo.inputmethod.latin.suggestions.SuggestionStripViewListener
 import org.futo.inputmethod.latin.uix.actions.ActionEditor
 import org.futo.inputmethod.latin.uix.actions.ActionRegistry
@@ -698,6 +699,7 @@ class UixManager(private val latinIME: LatinIME) {
 
     /** Apply the configured opening state once when the IME window becomes visible. */
     fun onKeyboardWindowShown() {
+        SmartFormattingSession.onKeyboardShown(latinIME)
         when (latinIME.getSetting(FavoriteActionsBarOnOpenSetting)) {
             FavoriteActionsBarOnOpen.HIDDEN -> setActionsExpanded(false)
             FavoriteActionsBarOnOpen.SHOWN -> setActionsExpanded(true)

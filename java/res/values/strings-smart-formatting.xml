@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="smart_formatting_settings_title">Smart Formatting</string>
+    <string name="smart_formatting_settings_subtitle">Automatic Markdown lists, indentation and closing pairs</string>
+    <string name="smart_formatting_action_title">Smart Formatting</string>
+    <string name="smart_formatting_now_enabled">Smart Formatting enabled</string>
+    <string name="smart_formatting_now_disabled">Smart Formatting disabled</string>
+    <string name="smart_formatting_indent_action">Indent</string>
+    <string name="smart_formatting_deindent_action">Deindent</string>
+    <string name="smart_formatting_startup">When keyboard opens</string>
+    <string name="smart_formatting_startup_disabled">Disabled (default)</string>
+    <string name="smart_formatting_startup_enabled">Enabled</string>
+    <string name="smart_formatting_startup_remember">Remember last state</string>
+    <string name="smart_formatting_lists">Lists &amp; indentation</string>
+    <string name="smart_formatting_continue_lists">Continue Markdown lists on Enter</string>
+    <string name="smart_formatting_clear_empty_list_item">Clear empty list item on Enter</string>
+    <string name="smart_formatting_clear_empty_list_item_subtitle">Remove its marker and leading indentation only when nothing follows the first space</string>
+    <string name="smart_formatting_spaces_per_tab">Spaces per indent</string>
+    <string name="smart_formatting_indent_shortcut">Indent list using two spaces</string>
+    <string name="smart_formatting_deindent_shortcut">Deindent list using two hyphens</string>
+    <string name="smart_formatting_characters">Auto-close characters</string>
+    <string name="smart_formatting_close_round">Parentheses ( )</string>
+    <string name="smart_formatting_close_square">Square brackets [ ]</string>
+    <string name="smart_formatting_close_curly">Curly braces { }</string>
+    <string name="smart_formatting_close_angle">Angle brackets &lt; &gt;</string>
+    <string name="smart_formatting_close_single_quote">Single quotes (\'\')</string>
+    <string name="smart_formatting_close_double_quote">Double quotes (\"\")</string>
+    <string name="smart_formatting_close_asterisk">Asterisks (**)</string>
+    <string name="smart_formatting_close_backtick">Backticks (``)</string>
+    <string name="smart_formatting_tags">Auto-close tags</string>
+    <string name="smart_formatting_close_html_tag">HTML tags &lt;tag&gt;</string>
+    <string name="smart_formatting_close_bbcode_tag">BBCode tags [tag]</string>
+</resources>

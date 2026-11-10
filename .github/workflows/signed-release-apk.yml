@@ -2,7 +2,7 @@ name: Signed stable release APK
 
 on:
   push:
-    branches: [master, feature/select-word-and-line-actions]
+    branches: [master, feature/select-word-and-line-actions, 'feature/smart-formatting']
   workflow_dispatch:
 
 permissions:
@@ -19,7 +19,7 @@ jobs:
     env:
       VERSION_CODE: ${{ github.run_number }}
       VERSION_NAME: 0.0.0-ci-${{ github.run_number }}
-      BRANCH_NAME: master
+      BRANCH_NAME: ${{ github.ref_name }}
 
     steps:
       - name: Checkout with required submodules

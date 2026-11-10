@@ -856,6 +856,13 @@ val TypingSettingsMenu = UserSettingsMenu(
     title = R.string.typing_settings_title,
     navPath = "typing", registerNavPath = true,
     settings = listOf(
+        userSettingNavigationItem(
+            title = R.string.smart_formatting_settings_title,
+            subtitle = R.string.smart_formatting_settings_subtitle,
+            style = NavigationItemStyle.Misc,
+            navigateTo = "smartFormatting",
+            icon = R.drawable.lucide_pencil_sparkles,
+        ),
         UserSetting(
             name = R.string.typing_settings_auto_space_mode,
             component = {
