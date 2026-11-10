@@ -87,6 +87,13 @@ object SmartFormattingProcessor {
         val cursor = connection.mExpectedSelStart
         if (cursor < 0 || cursor != connection.mExpectedSelEnd || cursor <= beforeCursor) return
         val code = event.mCodePoint
+        // Read editor context only when the key can trigger a Smart Formatting rule.
+        when (code) {
+            Constants.CODE_ENTER, ' '.code, '-'.code, '>'.code, ']'.code,
+            '('.code, '['.code, '{'.code, '<'.code, '\''.code,
+            '"'.code, '*'.code, '\u0060'.code -> Unit
+            else -> return
+        }
         val beforeText = connection.getTextBeforeCursor(4096, 0)?.toString() ?: return
         if (beforeText.isEmpty()) return
 
