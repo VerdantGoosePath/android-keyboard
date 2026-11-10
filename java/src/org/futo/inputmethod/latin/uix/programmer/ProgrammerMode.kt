@@ -264,7 +264,7 @@ fun sendProgrammerKey(
         }
         ProgrammerKeyType.Action -> {
             AllActionsMap[key.value]?.let { action ->
-                action.simplePressImpl?.invoke(manager, null) ?: manager.activateAction(action)
+                manager.activateAction(action)
             }
         }
         else -> Unit
