@@ -21,7 +21,7 @@ fun listContinuation(line: String): String? {
     val match = listLine.matchEntire(line) ?: return null
     val (indent, marker, contents) = match.destructured
     // Pressing Enter on an empty list item leaves the list rather than looping forever.
-    if (contents.isBlank()) return ""
+    if (contents.isEmpty()) return ""
     val next = if (marker.first().isDigit()) {
         val digits = marker.dropLast(1)
         val number = digits.toLongOrNull() ?: return null
@@ -29,6 +29,15 @@ fun listContinuation(line: String): String? {
         "${number + 1}${marker.last()}"
     } else marker
     return "$indent$next "
+}
+
+/**
+ * Length of an exactly empty Markdown list item, including its indentation and marker.
+ * Extra spaces or any other content after the first space make it nonempty.
+ */
+fun emptyListItemPrefixLength(line: String): Int? {
+    val match = listLine.matchEntire(line) ?: return null
+    return if (match.groupValues[3].isEmpty()) line.length else null
 }
 
 /** The optional space/dash shortcuts only operate on a line containing an empty list item. */

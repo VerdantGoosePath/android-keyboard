@@ -19,6 +19,21 @@ class SmartFormattingRulesTest {
         assertEquals("", listContinuation("  1. "))
     }
 
+    @Test fun clearsOnlyTrulyEmptyListItems() {
+        assertEquals(2, emptyListItemPrefixLength("- "))
+        assertEquals(6, emptyListItemPrefixLength("    - "))
+        assertEquals(3, emptyListItemPrefixLength("1. "))
+        assertEquals(5, emptyListItemPrefixLength("  1) "))
+        assertNull(emptyListItemPrefixLength("+  "))
+        assertNull(emptyListItemPrefixLength("-  "))
+        assertNull(emptyListItemPrefixLength("- text"))
+        assertNull(emptyListItemPrefixLength("1. x"))
+        assertNull(emptyListItemPrefixLength("  1.  "))
+        assertNull(emptyListItemPrefixLength("just text"))
+        assertEquals("- ", listContinuation("-  "))
+        assertEquals("2. ", listContinuation("1.  "))
+    }
+
     @Test fun indentAndDeindentDoNotTouchContent() {
         assertEquals("    plain", indentLine("plain", 4))
         assertEquals("  - item", deindentLine("    - item", 2))

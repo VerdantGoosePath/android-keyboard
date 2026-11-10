@@ -68,7 +68,7 @@ private fun changeCurrentLineIndent(ime: LatinIME, increase: Boolean) {
 }
 
 val SmartFormattingAction = Action(
-    icon = R.drawable.type,
+    icon = R.drawable.lucide_pencil_sparkles,
     name = R.string.smart_formatting_action_title,
     simplePressImpl = { manager, _ ->
         (manager.getContext() as? LatinIME)?.let {
@@ -85,7 +85,7 @@ val SmartFormattingAction = Action(
 )
 
 val IndentAction = Action(
-    icon = R.drawable.arrow_right,
+    icon = R.drawable.lucide_list_indent_increase,
     name = R.string.smart_formatting_indent_action,
     simplePressImpl = { manager, _ ->
         (manager.getContext() as? LatinIME)?.let { changeCurrentLineIndent(it, true) }
@@ -94,7 +94,7 @@ val IndentAction = Action(
 )
 
 val DeindentAction = Action(
-    icon = R.drawable.arrow_left,
+    icon = R.drawable.lucide_list_indent_decrease,
     name = R.string.smart_formatting_deindent_action,
     simplePressImpl = { manager, _ ->
         (manager.getContext() as? LatinIME)?.let { changeCurrentLineIndent(it, false) }

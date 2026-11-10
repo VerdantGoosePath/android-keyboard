@@ -33,6 +33,11 @@ val SmartFormattingMenu = UserSettingsMenu(
         },
         userSettingDecorationOnly { ScreenTitle(stringResource(R.string.smart_formatting_lists)) },
         userSettingToggleDataStore(R.string.smart_formatting_continue_lists, SmartFormattingSettings.listContinuation),
+        userSettingToggleDataStore(
+            title = R.string.smart_formatting_clear_empty_list_item,
+            subtitle = R.string.smart_formatting_clear_empty_list_item_subtitle,
+            setting = SmartFormattingSettings.clearEmptyListItem,
+        ),
         UserSetting(R.string.smart_formatting_spaces_per_tab) {
             val setting = useDataStore(SmartFormattingSettings.spacesPerTab)
             DropDownPickerSettingItem(

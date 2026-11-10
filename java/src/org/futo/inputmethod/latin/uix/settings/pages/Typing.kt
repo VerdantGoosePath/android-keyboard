@@ -861,7 +861,7 @@ val TypingSettingsMenu = UserSettingsMenu(
             subtitle = R.string.smart_formatting_settings_subtitle,
             style = NavigationItemStyle.Misc,
             navigateTo = "smartFormatting",
-            icon = R.drawable.type,
+            icon = R.drawable.lucide_pencil_sparkles,
         ),
         UserSetting(
             name = R.string.typing_settings_auto_space_mode,

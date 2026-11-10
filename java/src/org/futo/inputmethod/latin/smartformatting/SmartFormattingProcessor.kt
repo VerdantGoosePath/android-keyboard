@@ -98,8 +98,24 @@ object SmartFormattingProcessor {
         if (beforeText.isEmpty()) return
 
         if (code == Constants.CODE_ENTER && beforeText.endsWith("\n")) {
-            if (!context.getSetting(SmartFormattingSettings.listContinuation)) return
             val previous = beforeText.dropLast(1).substringAfterLast('\n').substringAfterLast('\r')
+            val emptyMarkerLength = emptyListItemPrefixLength(previous)
+            if (emptyMarkerLength != null &&
+                context.getSetting(SmartFormattingSettings.clearEmptyListItem)) {
+                // The line must be empty on both sides of the original caret. If Enter
+                // split a populated line (e.g. "- |text"), preserve the list marker.
+                val after = connection.getTextAfterCursor(1, 0)
+                if (after != null && (after.isEmpty() || after[0] == '\n' || after[0] == '\r')) {
+                    // Delete [indent + marker + space + newline], then insert one newline.
+                    // The original list line becomes blank, with the caret on the next
+                    // blank line. Use deleteSurroundingText via RichInputConnection:
+                    // commitText("") is dropped by the keyboard's buffering wrapper.
+                    connection.deleteTextBeforeCursor(emptyMarkerLength + 1)
+                    connection.commitText("\n", 1)
+                    return
+                }
+            }
+            if (!context.getSetting(SmartFormattingSettings.listContinuation)) return
             val prefix = listContinuation(previous) ?: return
             if (prefix.isNotEmpty()) connection.commitText(prefix, 1)
             return

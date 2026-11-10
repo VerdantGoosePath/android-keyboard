@@ -16,6 +16,7 @@ object SmartFormattingSettings {
     val lastEnabled = SettingsKey(booleanPreferencesKey("smart_formatting_last_enabled"), false)
     val spacesPerTab = SettingsKey(intPreferencesKey("smart_formatting_spaces_per_tab"), 4)
     val listContinuation = SettingsKey(booleanPreferencesKey("smart_formatting_list_continuation"), true)
+    val clearEmptyListItem = SettingsKey(booleanPreferencesKey("smart_formatting_clear_empty_list_item"), true)
     val indentShortcut = SettingsKey(booleanPreferencesKey("smart_formatting_indent_shortcut"), true)
     val deindentShortcut = SettingsKey(booleanPreferencesKey("smart_formatting_deindent_shortcut"), true)
     val closeRound = SettingsKey(booleanPreferencesKey("smart_formatting_close_round"), true)
