@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="programmer_mode_title">Programming Mode</string>
+    <string name="programmer_mode_enabled">Show programming row</string>
+    <string name="programmer_mode_keys">Keys</string>
+    <string name="programmer_mode_reorder">Drag to reorder</string>
+    <string name="programmer_mode_delete">Delete key</string>
+    <string name="programmer_mode_add">Add key</string>
+    <string name="programmer_mode_appearance">Appearance</string>
+    <string name="programmer_mode_style">Key style</string>
+    <string name="programmer_mode_modifiers">Modifier keys</string>
+    <string name="programmer_mode_auto_release">Release latched modifiers after a key</string>
+    <string name="programmer_mode_edit_key">Edit key</string>
+    <string name="programmer_mode_key_type">Key</string>
+    <string name="programmer_mode_icon">Icon</string>
+    <string name="programmer_mode_label">Button label</string>
+    <string name="programmer_mode_tab_spaces">Spaces instead of Tab: %1$d</string>
+    <string name="programmer_mode_string">Text to insert</string>
+    <string name="programmer_mode_action">Action</string>
+    <string name="programmer_mode_toggle_action">Toggle Programming Mode</string>
+</resources>
