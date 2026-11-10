@@ -76,6 +76,11 @@ interface KeyboardManagerForAction {
 
     fun isShifted(): Boolean
 
+    /** Active programming mode modifiers, when available; no-op for other action managers. */
+    fun getProgrammerMetaState(): Int = 0
+    fun isProgrammerModeEnabled(): Boolean = false
+    fun onProgrammerNonModifierKey() {}
+
     fun cursorLeft(steps: Int, stepOverWords: Boolean, select: Boolean)
     fun cursorRight(steps: Int, stepOverWords: Boolean, select: Boolean)
 

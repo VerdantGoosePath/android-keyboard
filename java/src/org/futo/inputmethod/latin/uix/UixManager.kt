@@ -130,6 +130,21 @@ import org.futo.inputmethod.latin.uix.actions.KeyboardModeAction
 import org.futo.inputmethod.latin.uix.actions.PersistentEmojiState
 import org.futo.inputmethod.latin.uix.actions.keyCode
 import org.futo.inputmethod.latin.uix.actions.keyCodeAlt
+import org.futo.inputmethod.latin.uix.programmer.ProgrammerModeEnabled
+import org.futo.inputmethod.latin.uix.programmer.ProgrammerLayoutSetting
+import org.futo.inputmethod.latin.uix.programmer.ProgrammerKeyStyle
+import org.futo.inputmethod.latin.uix.programmer.ProgrammerAutoRelease
+import org.futo.inputmethod.latin.uix.programmer.ProgrammerModifiers
+import org.futo.inputmethod.latin.uix.programmer.ProgrammerKeyType
+import org.futo.inputmethod.latin.uix.programmer.ModifierResponse
+import org.futo.inputmethod.latin.uix.programmer.keyCodeForCodePoint
+import org.futo.inputmethod.latin.uix.programmer.ProgrammerRow
+import org.futo.inputmethod.latin.uix.programmer.decodeProgrammerLayout
+import org.futo.inputmethod.latin.uix.programmer.dispatchProgrammerEvent
+import org.futo.inputmethod.latin.uix.programmer.responseFromOrdinal
+import org.futo.inputmethod.latin.uix.programmer.holdSetting
+import org.futo.inputmethod.latin.uix.programmer.tapSetting
+import org.futo.inputmethod.latin.uix.programmer.sendProgrammerKey
 import org.futo.inputmethod.latin.uix.resizing.KeyboardResizers
 import org.futo.inputmethod.latin.uix.settings.DataStoreCacheProvider
 import org.futo.inputmethod.latin.uix.settings.pages.ActionBarDisplayedSetting
@@ -420,6 +435,10 @@ class UixActionKeyboardManager(val uixManager: UixManager, val latinIME: LatinIM
 
     override fun isShifted(): Boolean = latinIME.latinIMELegacy.mKeyboardSwitcher.mState.shifted
 
+    override fun getProgrammerMetaState(): Int = uixManager.getProgrammerMetaState()
+    override fun isProgrammerModeEnabled(): Boolean = latinIME.getSetting(ProgrammerModeEnabled)
+    override fun onProgrammerNonModifierKey() { uixManager.releaseProgrammerModifiersIfConfigured() }
+
     override fun cursorLeft(steps: Int, stepOverWords: Boolean, select: Boolean) {
         latinIME.imeManager.getActiveIME(
             Settings.getInstance().current
@@ -605,6 +624,36 @@ class UixManager(private val latinIME: LatinIME) {
 
     private var inlineSuggestions: MutableState<List<MutableState<View?>>> = mutableStateOf(emptyList())
     private val keyboardManagerForAction = UixActionKeyboardManager(this, latinIME)
+    private val programmerModifiers = ProgrammerModifiers()
+
+    fun getProgrammerMetaState(): Int = if(latinIME.getSetting(ProgrammerModeEnabled)) programmerModifiers.metaState() else 0
+    fun releaseProgrammerModifiersIfConfigured() {
+        programmerModifiers.afterNonModifier(latinIME.getSetting(ProgrammerAutoRelease))
+    }
+
+    /** Intercept normal software key events only while a programmer modifier is active. */
+    fun onProgrammerKeyEvent(event: Event): Boolean {
+        if(!latinIME.getSetting(ProgrammerModeEnabled)) return false
+        return dispatchProgrammerEvent(
+            event, programmerModifiers, keyboardManagerForAction,
+            latinIME.getSetting(ProgrammerAutoRelease)
+        )
+    }
+
+    /** Text-output keys can contain several characters and bypass the ordinary key-code path. */
+    fun onProgrammerTextEvent(text: String): Boolean {
+        if(!latinIME.getSetting(ProgrammerModeEnabled) || !programmerModifiers.anyActive()) return false
+        text.codePoints().toArray().forEach { cp ->
+            val key = keyCodeForCodePoint(cp)
+            if(key != null) {
+                keyboardManagerForAction.sendKeyEvent(key.first, key.second or programmerModifiers.metaState())
+            } else {
+                latinIME.currentInputConnection?.commitText(String(Character.toChars(cp)), 1)
+            }
+        }
+        programmerModifiers.afterNonModifier(latinIME.getSetting(ProgrammerAutoRelease))
+        return true
+    }
 
     private var mainKeyboardHidden = mutableStateOf(false)
 
@@ -1366,6 +1415,49 @@ class UixManager(private val latinIME: LatinIME) {
                             hidden = mainKeyboardHidden.value)
                     }
 
+                    val programmerEnabled = useDataStore(ProgrammerModeEnabled).value
+                    val programmerLayout = useDataStore(ProgrammerLayoutSetting).value
+                    val programmerStyle = useDataStore(ProgrammerKeyStyle).value
+                    val programmerAutoRelease = useDataStore(ProgrammerAutoRelease).value
+                    LaunchedEffect(programmerEnabled) {
+                        if(!programmerEnabled) programmerModifiers.clear()
+                    }
+                    if(programmerEnabled && !mainKeyboardHidden.value) {
+                        ProgrammerRow(
+                            keys = decodeProgrammerLayout(programmerLayout).keys,
+                            style = programmerStyle,
+                            modifiers = programmerModifiers,
+                            modifier = Modifier.safeKeyboardPadding(),
+                            onKey = { key ->
+                                composeView?.let {
+                                    keyboardManagerForAction.performHapticAndAudioFeedback(Constants.CODE_TAB, it)
+                                }
+                                sendProgrammerKey(key, programmerModifiers, keyboardManagerForAction, programmerAutoRelease)
+                            },
+                            onModifierDown = { type ->
+                                programmerModifiers.onDown(type, responseFromOrdinal(latinIME.getSetting(holdSetting(type))))
+                            },
+                            onModifierRelease = { type ->
+                                programmerModifiers.onRelease(type, responseFromOrdinal(latinIME.getSetting(holdSetting(type))))
+                            },
+                            onModifierTap = { type ->
+                                programmerModifiers.respond(type, responseFromOrdinal(latinIME.getSetting(tapSetting(type))), keyboardManagerForAction)
+                            },
+                            onModifierLong = { type ->
+                                val response = responseFromOrdinal(latinIME.getSetting(holdSetting(type)))
+                                if(response == ModifierResponse.Toggle) {
+                                    programmerModifiers.respond(type, response, keyboardManagerForAction)
+                                }
+                            },
+                            onModifierLongRelease = { type ->
+                                val response = responseFromOrdinal(latinIME.getSetting(holdSetting(type)))
+                                if(response == ModifierResponse.Tap) {
+                                    programmerModifiers.respond(type, response, keyboardManagerForAction)
+                                }
+                            }
+                        )
+                    }
+
                     if(latinIME.size.value !is FloatingKeyboardSize) {
                         Spacer(Modifier.height(navBarHeight()))
                     }
@@ -1657,6 +1749,7 @@ class UixManager(private val latinIME: LatinIME) {
     }
 
     fun onInputFinishing() {
+        programmerModifiers.clear()
         closeActionWindow()
         languageSwitcherDialog?.dismiss()
         isShowingActionEditor.value = false

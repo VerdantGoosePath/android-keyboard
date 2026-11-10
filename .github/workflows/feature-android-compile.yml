@@ -1,0 +1,46 @@
+name: Feature branch Android compile
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'java/**'
+      - '.github/workflows/feature-android-compile.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  compile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      VERSION_CODE: 2000
+      VERSION_NAME: 0.0.0-pr
+      BRANCH_NAME: master
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: recursive
+          lfs: true
+      - name: Restore swipe model assets
+        run: |
+          git lfs install
+          git -C java/assets/futo-swipe lfs pull --include='honorable_sturgeon/model_fp32.pte,magic_macaw/model_fp32.pte,chosen_planarian/context_lm.pte'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Configure SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          sdkmanager_path="$(find "$sdk_root/cmdline-tools" -type f -name sdkmanager -print -quit)"
+          echo "ANDROID_HOME=$sdk_root" >> "$GITHUB_ENV"
+          yes | "$sdkmanager_path" --licenses >/dev/null || true
+          "$sdkmanager_path" "platforms;android-35" "build-tools;35.0.0" "ndk;28.2.13676358" "cmake;3.22.1"
+      - name: Compile Kotlin and Android tests
+        run: ./gradlew compileStableReleaseKotlin compileStableDebugAndroidTestKotlin --no-daemon --stacktrace

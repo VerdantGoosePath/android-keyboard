@@ -14,8 +14,13 @@ private fun getMetaState(manager: KeyboardManagerForAction): Int =
     }
 */
 
-// Disabled due to confusion and inconsistent app behavior
-private fun getMetaState(manager: KeyboardManagerForAction): Int = 0
+// Keep the old behaviour outside Programming Mode. Inside it, cursors are real
+// key events with all latched/held modifiers and the standard keyboard's Shift.
+private fun getMetaState(manager: KeyboardManagerForAction): Int =
+    if(manager.isProgrammerModeEnabled()) {
+        manager.getProgrammerMetaState() or
+            (if(manager.isShifted()) KeyEvent.META_SHIFT_ON else 0)
+    } else 0
 
 
 val ArrowUpAction = Action(
@@ -23,6 +28,7 @@ val ArrowUpAction = Action(
     name = R.string.action_cursor_up_title,
     simplePressImpl = { manager, _ ->
         manager.sendKeyEvent(KeyEvent.KEYCODE_DPAD_UP, getMetaState(manager))
+        manager.onProgrammerNonModifierKey()
     },
     windowImpl = null,
 )
@@ -32,6 +38,7 @@ val ArrowDownAction = Action(
     name = R.string.action_cursor_down_title,
     simplePressImpl = { manager, _ ->
         manager.sendKeyEvent(KeyEvent.KEYCODE_DPAD_DOWN, getMetaState(manager))
+        manager.onProgrammerNonModifierKey()
     },
     windowImpl = null,
 )
@@ -41,6 +48,7 @@ val ArrowLeftAction = Action(
     name = R.string.action_cursor_left_title,
     simplePressImpl = { manager, _ ->
         manager.sendKeyEvent(KeyEvent.KEYCODE_DPAD_LEFT, getMetaState(manager))
+        manager.onProgrammerNonModifierKey()
     },
     windowImpl = null,
 )
@@ -50,6 +58,7 @@ val ArrowRightAction = Action(
     name = R.string.action_cursor_right_title,
     simplePressImpl = { manager, _ ->
         manager.sendKeyEvent(KeyEvent.KEYCODE_DPAD_RIGHT, getMetaState(manager))
+        manager.onProgrammerNonModifierKey()
     },
     windowImpl = null,
 )

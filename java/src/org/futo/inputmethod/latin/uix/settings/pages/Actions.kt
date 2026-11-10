@@ -187,7 +187,13 @@ val ActionsScreen = UserSettingsMenu(
 
         userSettingDecorationOnly {
             ScreenTitle(stringResource(R.string.action_settings_action_settings))
-        }
+        },
+        userSettingNavigationItem(
+            title = R.string.programmer_mode_title,
+            style = NavigationItemStyle.HomeTertiary,
+            navigateTo = "programmerMode",
+            icon = R.drawable.keyboard_regular
+        )
     ) + AllActionsMap.mapNotNull { v ->
         v.value.settingsMenu?.let {
             userSettingNavigationItem(
