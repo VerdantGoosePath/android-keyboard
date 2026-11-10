@@ -282,11 +282,15 @@ fun resizeProgrammerKeys(
     val widths = keys.map { it.width.coerceAtLeast(0.25f) }.toMutableList()
     val total = widths.sum()
     val others = adjustable.sumOf { widths[it].toDouble() }.toFloat()
-    val min = total * 0.035f
+    val minWidth = 0.25f
     val change = (if(rightEdge) deltaFraction else -deltaFraction) * total
-    val clamped = change.coerceIn(min - widths[index], others - min * adjustable.size)
+    // The neighbours shrink proportionally, but none may fall below the stored minimum.
+    val maxGrowth = adjustable.minOf { i ->
+        (widths[i] - minWidth).coerceAtLeast(0f) * others / widths[i]
+    }
+    val clamped = change.coerceIn(minWidth - widths[index], maxGrowth)
     if(clamped == 0f) return keys
     widths[index] += clamped
     for(i in adjustable) widths[i] -= clamped * widths[i] / others
-    return keys.mapIndexed { i, key -> key.copy(width = widths[i]) }
+    return keys.mapIndexed { i, key -> key.copy(width = widths[i].coerceAtLeast(minWidth)) }
 }
