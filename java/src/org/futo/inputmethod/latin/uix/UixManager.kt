@@ -435,6 +435,10 @@ class UixActionKeyboardManager(val uixManager: UixManager, val latinIME: LatinIM
 
     override fun isShifted(): Boolean = latinIME.latinIMELegacy.mKeyboardSwitcher.mState.shifted
 
+    override fun getProgrammerMetaState(): Int = uixManager.getProgrammerMetaState()
+    override fun isProgrammerModeEnabled(): Boolean = latinIME.getSetting(ProgrammerModeEnabled)
+    override fun onProgrammerNonModifierKey() { uixManager.releaseProgrammerModifiersIfConfigured() }
+
     override fun cursorLeft(steps: Int, stepOverWords: Boolean, select: Boolean) {
         latinIME.imeManager.getActiveIME(
             Settings.getInstance().current
@@ -621,6 +625,11 @@ class UixManager(private val latinIME: LatinIME) {
     private var inlineSuggestions: MutableState<List<MutableState<View?>>> = mutableStateOf(emptyList())
     private val keyboardManagerForAction = UixActionKeyboardManager(this, latinIME)
     private val programmerModifiers = ProgrammerModifiers()
+
+    fun getProgrammerMetaState(): Int = if(latinIME.getSetting(ProgrammerModeEnabled)) programmerModifiers.metaState() else 0
+    fun releaseProgrammerModifiersIfConfigured() {
+        programmerModifiers.afterNonModifier(latinIME.getSetting(ProgrammerAutoRelease))
+    }
 
     /** Intercept normal software key events only while a programmer modifier is active. */
     fun onProgrammerKeyEvent(event: Event): Boolean {
