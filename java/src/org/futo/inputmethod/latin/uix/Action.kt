@@ -78,6 +78,8 @@ interface KeyboardManagerForAction {
 
     fun cursorLeft(steps: Int, stepOverWords: Boolean, select: Boolean)
     fun cursorRight(steps: Int, stepOverWords: Boolean, select: Boolean)
+    fun selectWord()
+    fun selectLine()
 
     fun performHapticAndAudioFeedback(code: Int, view: View)
     fun announce(s: String)

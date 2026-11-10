@@ -13,6 +13,20 @@ val SelectAllAction = Action(
     windowImpl = null,
 )
 
+val SelectWordAction = Action(
+    icon = R.drawable.type,
+    name = R.string.action_select_word_title,
+    simplePressImpl = { manager, _ -> manager.selectWord() },
+    windowImpl = null,
+)
+
+val SelectLineAction = Action(
+    icon = R.drawable.file_text,
+    name = R.string.action_select_line_title,
+    simplePressImpl = { manager, _ -> manager.selectLine() },
+    windowImpl = null,
+)
+
 val CutAction = Action(
     icon = R.drawable.scissors,
     name = R.string.action_cut_title,
