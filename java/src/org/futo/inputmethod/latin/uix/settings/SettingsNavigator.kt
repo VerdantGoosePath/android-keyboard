@@ -20,6 +20,8 @@ import org.futo.inputmethod.latin.uix.InfoDialog
 import org.futo.inputmethod.latin.uix.LocalNavController
 import org.futo.inputmethod.latin.uix.SettingsExporter.ExportingMenu
 import org.futo.inputmethod.latin.uix.actions.AllActions
+import org.futo.inputmethod.latin.uix.programmer.ProgrammerModeSettings
+import org.futo.inputmethod.latin.uix.programmer.ProgrammerKeySettings
 import org.futo.inputmethod.latin.uix.settings.pages.ActionEditorScreen
 import org.futo.inputmethod.latin.uix.settings.pages.ActionsScreen
 import org.futo.inputmethod.latin.uix.settings.pages.AdvancedParametersScreen
@@ -166,6 +168,10 @@ fun SettingsNavigator(
             }
             composable("advancedparams") { AdvancedParametersScreen(navController) }
             composable("actionEdit") { ActionEditorScreen(navController) }
+            composable("programmerMode") { ProgrammerModeSettings(navController) }
+            composable("programmerMode/key/{id}") { entry ->
+                ProgrammerKeySettings(navController, entry.arguments?.getString("id") ?: "")
+            }
             SettingsMenus.forEach { menu ->
                 if(menu.registerNavPath) composable(menu.navPath) { UserSettingsMenuScreen(menu) }
             }
