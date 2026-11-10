@@ -72,6 +72,49 @@ class ProgrammerModeTests : AndroidTestCase() {
         assertFalse(state.anyActive())
     }
 
+    fun testCtrlShiftZEmitsOneCombinedKeyEvent() {
+        StubManager.events.clear()
+        val modifiers = ProgrammerModifiers()
+        modifiers.respond(ProgrammerKeyType.Ctrl, ModifierResponse.Toggle, StubManager)
+        modifiers.respond(ProgrammerKeyType.Shift, ModifierResponse.Toggle, StubManager)
+        val event = org.futo.inputmethod.event.Event.createSoftwareKeypressEvent(
+            'z'.code, org.futo.inputmethod.event.Event.NOT_A_KEY_CODE, 0, 0, false
+        )
+        assertTrue(dispatchProgrammerEvent(event, modifiers, StubManager, autoRelease = true))
+        assertEquals(1, StubManager.events.size)
+        val (code, meta) = StubManager.events.single()
+        assertEquals(KeyEvent.KEYCODE_Z, code)
+        assertTrue(meta and KeyEvent.META_CTRL_ON != 0)
+        assertTrue(meta and KeyEvent.META_SHIFT_ON != 0)
+        assertFalse(modifiers.anyActive())
+    }
+
+    fun testShiftTabAndCtrlBackspaceUseKeyEvents() {
+        StubManager.events.clear()
+        val modifiers = ProgrammerModifiers()
+        modifiers.respond(ProgrammerKeyType.Shift, ModifierResponse.Toggle, StubManager)
+        sendProgrammerKey(
+            ProgrammerKey("tab", ProgrammerKeyType.Tab),
+            modifiers, StubManager, autoRelease = true
+        )
+        assertEquals(KeyEvent.KEYCODE_TAB, StubManager.events.single().first)
+        assertTrue(StubManager.events.single().second and KeyEvent.META_SHIFT_ON != 0)
+        assertFalse(modifiers.anyActive())
+
+        StubManager.events.clear()
+        modifiers.respond(ProgrammerKeyType.Ctrl, ModifierResponse.Toggle, StubManager)
+        assertTrue(dispatchProgrammerEvent(
+            org.futo.inputmethod.event.Event.createSoftwareKeypressEvent(
+                org.futo.inputmethod.event.Event.NOT_A_CODE_POINT,
+                org.futo.inputmethod.latin.common.Constants.CODE_DELETE, 0, 0, false
+            ),
+            modifiers, StubManager, autoRelease = true
+        ))
+        assertEquals(KeyEvent.KEYCODE_DEL, StubManager.events.single().first)
+        assertTrue(StubManager.events.single().second and KeyEvent.META_CTRL_ON != 0)
+        assertFalse(modifiers.anyActive())
+    }
+
     fun testLetterAndNumberKeycodes() {
         assertEquals(KeyEvent.KEYCODE_F, keyCodeForCodePoint('f'.code)?.first)
         assertEquals(KeyEvent.KEYCODE_Z, keyCodeForCodePoint('Z'.code)?.first)
@@ -82,6 +125,7 @@ class ProgrammerModeTests : AndroidTestCase() {
 
 /** For toggle-only tests no keyboard operations should be sent. */
 private object StubManager : org.futo.inputmethod.latin.uix.KeyboardManagerForAction {
+    val events = mutableListOf<Pair<Int, Int>>()
     override fun getContext() = error("unused")
     override fun getLifecycleScope(): androidx.lifecycle.LifecycleCoroutineScope = error("unused")
     override fun createInputTransaction(): org.futo.inputmethod.latin.uix.ActionInputTransaction = error("unused")
@@ -95,7 +139,7 @@ private object StubManager : org.futo.inputmethod.latin.uix.KeyboardManagerForAc
     override fun triggerSystemVoiceInput() = error("unused")
     override fun getThemeProvider(): org.futo.inputmethod.latin.uix.DynamicThemeProvider = error("unused")
     override fun sendCodePointEvent(codePoint: Int) = error("unused")
-    override fun sendKeyEvent(keyCode: Int, metaState: Int) = error("unused")
+    override fun sendKeyEvent(keyCode: Int, metaState: Int) { events.add(keyCode to metaState) }
     override fun isShifted() = false
     override fun cursorLeft(steps: Int, stepOverWords: Boolean, select: Boolean) = error("unused")
     override fun cursorRight(steps: Int, stepOverWords: Boolean, select: Boolean) = error("unused")
