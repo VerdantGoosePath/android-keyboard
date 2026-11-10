@@ -8,6 +8,9 @@ import androidx.compose.runtime.setValue
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
 import org.futo.inputmethod.keyboard.Key
 import org.futo.inputmethod.keyboard.Keyboard
 import org.futo.inputmethod.keyboard.internal.isAlphabet
@@ -20,6 +23,8 @@ import org.futo.inputmethod.latin.uix.SettingsKey
 import org.futo.inputmethod.latin.uix.getSetting
 import org.futo.ml.inference.SwipeDecoder
 import java.io.File
+import java.io.IOException
+import java.security.MessageDigest
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -270,36 +275,78 @@ class SwipeDecoderDictionary(val context: Context, val locale: Locale) : Diction
         fun parseMetadataToGetCodename(content: String): String =
             CodenameParseJson.decodeFromString<ModelMetadata>(content).codename
 
+        // The APK must contain real ExecuTorch models, never Git LFS text pointers.
+        // The metadata in the same model directory records the correct length and SHA-256.
         private val createdFiles = mutableSetOf<String>()
-        fun getFilePath(context: Context, assetName: String): String {
-            if(assetName.isEmpty()) return ""
 
-            val assets = context.assets
-            val tmpDir = context.codeCacheDir
-            val modelFile = File(tmpDir, assetName)
-
-            if (modelFile.exists()) {
-                if(assetName in createdFiles) return modelFile.absolutePath
-
-                modelFile.delete()
+        private fun verifyModelFile(context: Context, assetName: String, file: File) {
+            if (file.length() < 1024L) {
+                throw IOException("Swipe model $assetName is too small: missing Git LFS data or truncated asset")
             }
-            modelFile.parentFile?.mkdirs()
-            assets.open(assetName).use { inputStream ->
-                modelFile.outputStream().use { outputStream ->
-                    inputStream.copyTo(outputStream)
+
+            val metadata = context.assets.open(metadataFor(assetName)).bufferedReader().use {
+                Json.parseToJsonElement(it.readText()).jsonObject
+            }
+            val name = assetName.substringAfterLast('/')
+            val expectedSize = metadata["file_sizes"]?.jsonObject?.get(name)?.jsonPrimitive?.longOrNull
+            val expectedHash = metadata["file_hashes"]?.jsonObject?.get(name)?.jsonPrimitive?.content
+            if (expectedSize == null || expectedHash == null ||
+                !expectedHash.matches(Regex("[a-fA-F0-9]{64}"))) {
+                throw IOException("Missing size or SHA-256 in metadata for $assetName")
+            }
+            if (file.length() != expectedSize) {
+                throw IOException("Swipe model $assetName has wrong size: ${file.length()} != $expectedSize")
+            }
+
+            val digest = MessageDigest.getInstance("SHA-256")
+            file.inputStream().use { stream ->
+                val bytes = ByteArray(32768)
+                while (true) {
+                    val count = stream.read(bytes)
+                    if (count == -1) break
+                    digest.update(bytes, 0, count)
                 }
             }
-
-            createdFiles.add(assetName)
-
-            if(assetName.endsWith(".pte")) {
-                // Ensure metadata is also present
-                getFilePath(context, metadataFor(assetName))
+            val actualHash = digest.digest().joinToString("") { "%02x".format(it.toInt() and 0xff) }
+            if (!actualHash.equals(expectedHash, ignoreCase = true)) {
+                throw IOException("Swipe model $assetName failed SHA-256 integrity check")
             }
-
-            return modelFile.absolutePath
         }
 
+        // Serialise extraction: the decoder must never mmap a partly copied model.
+        // Stage in the same directory so rename is atomic on Android's filesystem.
+        @Synchronized
+        fun getFilePath(context: Context, assetName: String): String {
+            if (assetName.isEmpty()) return ""
+
+            val modelFile = File(context.codeCacheDir, assetName)
+            if (assetName in createdFiles && modelFile.isFile) return modelFile.absolutePath
+
+            val parent = modelFile.parentFile ?: throw IOException("No parent for $assetName")
+            if (!parent.isDirectory && !parent.mkdirs()) {
+                throw IOException("Cannot create swipe model directory: $parent")
+            }
+
+            val staged = File.createTempFile("swipe-", ".partial", parent)
+            try {
+                context.assets.open(assetName).use { source ->
+                    staged.outputStream().use { destination -> source.copyTo(destination) }
+                }
+                if (assetName.endsWith(".pte")) verifyModelFile(context, assetName, staged)
+                if (!staged.renameTo(modelFile)) {
+                    throw IOException("Cannot install swipe asset $assetName")
+                }
+            } finally {
+                staged.delete()
+            }
+
+            if (assetName.endsWith(".pte")) {
+                // The native loader reads scoring/metadata alongside the model.
+                getFilePath(context, metadataFor(assetName))
+            }
+            createdFiles.add(assetName)
+            return modelFile.absolutePath
+        }
 
         @JvmStatic
         fun updateKeyboard(keyboard: Keyboard) {
@@ -319,6 +366,17 @@ class SwipeDecoderDictionary(val context: Context, val locale: Locale) : Diction
     }
 
     var decoder: SwipeDecoder? = null
+    private var decoderUnavailable = false
+
+    private fun disableDecoder(error: Exception) {
+        if (!decoderUnavailable) {
+            Log.e("SwipeDecoderDictionary",
+                "Neural swipe unavailable; using the dictionary gesture fallback", error)
+        }
+        decoderUnavailable = true
+        decoder = null
+        appliedTries = null
+    }
 
     object BeamValues {
         const val shortBeam = 32
@@ -327,19 +385,25 @@ class SwipeDecoderDictionary(val context: Context, val locale: Locale) : Diction
         const val highestBeam = 300
     }
 
-    private fun getOrInitDecoder(): SwipeDecoder = decoder ?: run {
-        val swipeModelPath = getFilePath(context, SWIPE_MODEL)
+    @Synchronized
+    private fun getOrInitDecoder(): SwipeDecoder? {
+        if (decoderUnavailable) return null
+        decoder?.let { return it }
 
-        val decoder = SwipeDecoder(
-            encoderPath = swipeModelPath,
-            beamWidth = BeamValues.highestBeam,
-            useExpansion = false, // ITrie contains expanded entries already
-        )
-
-        this.decoder = decoder
-        applyPendingLayoutInfo()
-
-        return decoder
+        return try {
+            val swipeModelPath = getFilePath(context, SWIPE_MODEL)
+            val instance = SwipeDecoder(
+                encoderPath = swipeModelPath,
+                beamWidth = BeamValues.highestBeam,
+                useExpansion = false, // ITrie contains expanded entries already
+            )
+            decoder = instance
+            applyPendingLayoutInfo()
+            if (decoderUnavailable) null else instance
+        } catch (error: Exception) {
+            disableDecoder(error)
+            null
+        }
     }
 
     override fun getNextValidCodePoints(composedData: ComposedData?): ArrayList<Int> {
@@ -352,7 +416,7 @@ class SwipeDecoderDictionary(val context: Context, val locale: Locale) : Diction
     ): ArrayList<SuggestedWords.SuggestedWordInfo>? {
         if(true) return null
 
-        val decoder = getOrInitDecoder()
+        val decoder = getOrInitDecoder() ?: return null
         val wordsContext = ngramContext?.fullContext?.split(' ')?.takeLast(10) ?: emptyList()
         decoder.setContext(wordsContext)
 
@@ -446,8 +510,13 @@ class SwipeDecoderDictionary(val context: Context, val locale: Locale) : Diction
             ?.takeLast(10)
             ?: emptyList()
 
-        val decoder = getOrInitDecoder()
-        decoder.setContext(wordsContext)
+        val decoder = getOrInitDecoder() ?: return null
+        try {
+            decoder.setContext(wordsContext)
+        } catch (error: Exception) {
+            disableDecoder(error)
+            return null
+        }
         appliedTrieWeights = trieWeights
 
         val isMultiSwipe = (left.size + right.size) > 1
@@ -459,17 +528,22 @@ class SwipeDecoderDictionary(val context: Context, val locale: Locale) : Diction
 
         val topK = if(useHighBeam) 4 else 1
 
-        val results = synchronized(BinaryDictionary.sTrieUsageLock) {
-            if(appliedTries?.isEmpty() != false) {
-                Log.e("SwipeDecoderDictionary", "Applied tries are blank! $appliedTries")
-                return null
+        val results = try {
+            synchronized(BinaryDictionary.sTrieUsageLock) {
+                if (appliedTries?.isEmpty() != false) {
+                    Log.e("SwipeDecoderDictionary", "Applied tries are blank! $appliedTries")
+                    return null
+                }
+                decoder.recognize(
+                    left.toTypedArray(), right.toTypedArray(),
+                    topK = topK,
+                    beamWidth = beamWidth,
+                    trieWeights = trieWeights
+                )
             }
-            decoder.recognize(
-                 left.toTypedArray(), right.toTypedArray(),
-                 topK = topK,
-                 beamWidth = beamWidth,
-                 trieWeights = trieWeights
-            )
+        } catch (error: Exception) {
+            disableDecoder(error)
+            return null
         }
 
         // basically update it at end of swiping
@@ -523,28 +597,39 @@ class SwipeDecoderDictionary(val context: Context, val locale: Locale) : Diction
 
     data class PendingLayoutInfo(val layout: LayoutInfoForModel, val tries: List<Long>)
     private var pendingLayoutInfo: PendingLayoutInfo? = null
+    @Synchronized
     private fun applyPendingLayoutInfo() {
-        decoder?.let { d ->
-            pendingLayoutInfo?.let { pend ->
-                //Log.d("SwipeDecoderDictionary", "Applying layout info: $pend")
+        if (decoderUnavailable) return
+        val d = decoder ?: return
+        val pend = pendingLayoutInfo ?: return
+        try {
+            val decoderPath = getFilePath(context, pend.layout.decoder)
+            val lmPath = getFilePath(context, pend.layout.lm)
+            val vocabPath = getFilePath(context, vocabFor(pend.layout.lm))
+            synchronized(BinaryDictionary.sTrieUsageLock) {
                 d.setMode(
-                    letters=pend.layout.letters,
-                    cx=pend.layout.xs.toFloatArray(),
-                    cy=pend.layout.ys.toFloatArray(),
-                    tries=pend.tries.toLongArray(),
-                    decoderPath=getFilePath(context, pend.layout.decoder),
-                    lmModelPath=getFilePath(context, pend.layout.lm),
-                    lmVocabPath=getFilePath(context, vocabFor(pend.layout.lm))
+                    letters = pend.layout.letters,
+                    cx = pend.layout.xs.toFloatArray(),
+                    cy = pend.layout.ys.toFloatArray(),
+                    tries = pend.tries.toLongArray(),
+                    decoderPath = decoderPath,
+                    lmModelPath = lmPath,
+                    lmVocabPath = vocabPath
                 )
-                appliedScoring.value = d.scoring
-                appliedLayoutInfo = pend.layout
-                appliedTries = pend.tries.toLongArray()
             }
+            appliedScoring.value = d.scoring
+            appliedLayoutInfo = pend.layout
+            appliedTries = pend.tries.toLongArray()
+        } catch (error: Exception) {
+            disableDecoder(error)
+        } finally {
             pendingLayoutInfo = null
         }
     }
 
+    @Synchronized
     fun updateKeyboard(pendingLayoutInfo: PendingLayoutInfo) {
+        if (decoderUnavailable) return
         this.pendingLayoutInfo = pendingLayoutInfo
         applyPendingLayoutInfo()
     }
@@ -553,9 +638,16 @@ class SwipeDecoderDictionary(val context: Context, val locale: Locale) : Diction
         return false
     }
 
+    @Synchronized
     fun invalidateTries() {
-        if(appliedTries?.isEmpty() != false) return
-        decoder?.setMode(tries = emptyList<Long>().toLongArray())
-        appliedTries = null
+        if (appliedTries?.isEmpty() != false) return
+        try {
+            synchronized(BinaryDictionary.sTrieUsageLock) {
+                decoder?.setMode(tries = longArrayOf())
+            }
+            appliedTries = null
+        } catch (error: Exception) {
+            disableDecoder(error)
+        }
     }
 }

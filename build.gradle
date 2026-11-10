@@ -220,7 +220,8 @@ android {
     }
 
     final def keystorePropertiesFile = rootProject.file("keystore.properties")
-    def releaseSigning = signingConfigs.debug
+    // Never silently sign a release with the debug key.
+    def releaseSigning = null
     if (keystorePropertiesFile.exists()) {
         final def keystoreProperties = new Properties()
         keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
@@ -231,7 +232,7 @@ android {
             storePassword keystoreProperties['storePassword']
         }
     } else {
-        project.logger.lifecycle('keystore.properties not found, APK may not be signed')
+        project.logger.lifecycle('keystore.properties not found; release APKs will be unsigned')
     }
 
 
@@ -254,7 +255,9 @@ android {
             minifyEnabled true
             shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig releaseSigning
+            if (releaseSigning != null) {
+                signingConfig releaseSigning
+            }
         }
 
         buildTypes.each {
@@ -474,3 +477,59 @@ dependencies {
 
 project.logger.lifecycle("versionCode = ${android.defaultConfig.versionCode}")
 project.logger.lifecycle("versionName = ${android.defaultConfig.versionName}")
+
+/**
+ * Every Android build must package actual native swipe models, not Git LFS
+ * pointer text. Verify the model files against their pinned metadata before
+ * Gradle merges the assets; this also protects local builds outside CI.
+ */
+tasks.register('verifySwipeModelAssets') {
+    group = 'verification'
+    description = 'Validate the size and SHA-256 of bundled swipe models'
+    doLast {
+        def root = rootProject.file('java/assets/futo-swipe')
+        def models = [
+            'honorable_sturgeon/model_fp32.pte',
+            'magic_macaw/model_fp32.pte',
+            'chosen_planarian/context_lm.pte',
+        ]
+        models.each { relativePath ->
+            def model = new File(root, relativePath)
+            def metadataFile = new File(model.parentFile, 'metadata.json')
+            if (!model.isFile() || !metadataFile.isFile()) {
+                throw new GradleException("Missing swipe model or metadata: ${relativePath}; fetch submodules and Git LFS objects")
+            }
+            if (model.length() < 1024) {
+                throw new GradleException("Invalid swipe model ${relativePath}: Git LFS pointer or truncated file")
+            }
+            def metadata = new groovy.json.JsonSlurper().parse(metadataFile)
+            def expectedSize = metadata.file_sizes?.get(model.name)
+            def expectedHash = metadata.file_hashes?.get(model.name)
+            if (!(expectedSize instanceof Number) || !(expectedHash instanceof String) ||
+                    !(expectedHash ==~ /(?i)[0-9a-f]{64}/)) {
+                throw new GradleException("Missing size/SHA-256 metadata for swipe model ${relativePath}")
+            }
+            if (model.length() != expectedSize.longValue()) {
+                throw new GradleException("Swipe model ${relativePath} has wrong size")
+            }
+            def digest = java.security.MessageDigest.getInstance('SHA-256')
+            model.withInputStream { input ->
+                byte[] buffer = new byte[32768]
+                int count
+                while ((count = input.read(buffer)) != -1) {
+                    digest.update(buffer, 0, count)
+                }
+            }
+            if (!digest.digest().encodeHex().toString().equalsIgnoreCase(expectedHash)) {
+                throw new GradleException("Swipe model ${relativePath} failed SHA-256 verification")
+            }
+        }
+        def vocab = new File(root, 'chosen_planarian/vocab.txt')
+        if (!vocab.isFile() || vocab.length() == 0) {
+            throw new GradleException('Missing swipe context LM vocabulary')
+        }
+    }
+}
+tasks.matching { it.name == 'preBuild' }.configureEach {
+    dependsOn tasks.named('verifySwipeModelAssets')
+}

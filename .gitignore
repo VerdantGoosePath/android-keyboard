@@ -8,6 +8,14 @@ local.properties
 crashreporting.properties
 keystore.properties
 key.jks
+# Never commit any signing key, exported private key, or credentials.
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.key
+android-keyboard-release-signing-secrets.txt
 java/res/raw/mozc.data
 .cxx
 java/src/org/futo/inputmethod/keyboard/internal/KeyboardTextsTable.java

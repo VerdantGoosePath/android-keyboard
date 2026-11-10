@@ -103,7 +103,9 @@ public class DictionaryFacilitatorImpl implements DictionaryFacilitator {
     private static boolean sTriesAreInvalid = false;
     public static void onAnyBinaryDictionaryClosed() {
         sTriesAreInvalid = true;
-        swipeDecoderDictionary.invalidateTries();
+        if (swipeDecoderDictionary != null) {
+            swipeDecoderDictionary.invalidateTries();
+        }
     }
 
     @Override
