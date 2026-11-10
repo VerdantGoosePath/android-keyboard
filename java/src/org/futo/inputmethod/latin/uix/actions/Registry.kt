@@ -44,6 +44,7 @@ val AllActionsMap = mapOf(
     "right" to ArrowRightAction,
     "font_typer" to FontTyperAction,
     "save" to SaveAction,
+    "programmer_mode" to ToggleProgrammerModeAction,
 )
 
 val ActionToId = AllActionsMap.entries.associate { it.value to it.key }
