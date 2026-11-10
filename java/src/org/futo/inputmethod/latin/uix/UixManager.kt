@@ -130,6 +130,19 @@ import org.futo.inputmethod.latin.uix.actions.KeyboardModeAction
 import org.futo.inputmethod.latin.uix.actions.PersistentEmojiState
 import org.futo.inputmethod.latin.uix.actions.keyCode
 import org.futo.inputmethod.latin.uix.actions.keyCodeAlt
+import org.futo.inputmethod.latin.uix.programmer.ProgrammerModeEnabled
+import org.futo.inputmethod.latin.uix.programmer.ProgrammerLayoutSetting
+import org.futo.inputmethod.latin.uix.programmer.ProgrammerKeyStyle
+import org.futo.inputmethod.latin.uix.programmer.ProgrammerAutoRelease
+import org.futo.inputmethod.latin.uix.programmer.ProgrammerModifiers
+import org.futo.inputmethod.latin.uix.programmer.ProgrammerKeyType
+import org.futo.inputmethod.latin.uix.programmer.ProgrammerRow
+import org.futo.inputmethod.latin.uix.programmer.decodeProgrammerLayout
+import org.futo.inputmethod.latin.uix.programmer.dispatchProgrammerEvent
+import org.futo.inputmethod.latin.uix.programmer.responseFromOrdinal
+import org.futo.inputmethod.latin.uix.programmer.holdSetting
+import org.futo.inputmethod.latin.uix.programmer.tapSetting
+import org.futo.inputmethod.latin.uix.programmer.sendProgrammerKey
 import org.futo.inputmethod.latin.uix.resizing.KeyboardResizers
 import org.futo.inputmethod.latin.uix.settings.DataStoreCacheProvider
 import org.futo.inputmethod.latin.uix.settings.pages.ActionBarDisplayedSetting
@@ -605,6 +618,16 @@ class UixManager(private val latinIME: LatinIME) {
 
     private var inlineSuggestions: MutableState<List<MutableState<View?>>> = mutableStateOf(emptyList())
     private val keyboardManagerForAction = UixActionKeyboardManager(this, latinIME)
+    private val programmerModifiers = ProgrammerModifiers()
+
+    /** Intercept normal software key events only while a programmer modifier is active. */
+    fun onProgrammerKeyEvent(event: Event): Boolean {
+        if(!latinIME.getSetting(ProgrammerModeEnabled)) return false
+        return dispatchProgrammerEvent(
+            event, programmerModifiers, keyboardManagerForAction,
+            latinIME.getSetting(ProgrammerAutoRelease)
+        )
+    }
 
     private var mainKeyboardHidden = mutableStateOf(false)
 
@@ -1366,6 +1389,37 @@ class UixManager(private val latinIME: LatinIME) {
                             hidden = mainKeyboardHidden.value)
                     }
 
+                    val programmerEnabled = useDataStore(ProgrammerModeEnabled).value
+                    val programmerLayout = useDataStore(ProgrammerLayoutSetting).value
+                    val programmerStyle = useDataStore(ProgrammerKeyStyle).value
+                    val programmerAutoRelease = useDataStore(ProgrammerAutoRelease).value
+                    LaunchedEffect(programmerEnabled) {
+                        if(!programmerEnabled) programmerModifiers.clear()
+                    }
+                    if(programmerEnabled && !mainKeyboardHidden.value) {
+                        ProgrammerRow(
+                            keys = decodeProgrammerLayout(programmerLayout).keys,
+                            style = programmerStyle,
+                            modifiers = programmerModifiers,
+                            onKey = { key ->
+                                keyboardManagerForAction.performHapticAndAudioFeedback(Constants.CODE_TAB, composeView ?: return@ProgrammerRow)
+                                sendProgrammerKey(key, programmerModifiers, keyboardManagerForAction, programmerAutoRelease)
+                            },
+                            onModifierDown = { type ->
+                                programmerModifiers.onDown(type, responseFromOrdinal(latinIME.getSetting(holdSetting(type))))
+                            },
+                            onModifierRelease = { type ->
+                                programmerModifiers.onRelease(type, responseFromOrdinal(latinIME.getSetting(holdSetting(type))))
+                            },
+                            onModifierTap = { type ->
+                                programmerModifiers.respond(type, responseFromOrdinal(latinIME.getSetting(tapSetting(type))), keyboardManagerForAction)
+                            },
+                            onModifierLong = { type ->
+                                programmerModifiers.respond(type, responseFromOrdinal(latinIME.getSetting(holdSetting(type))), keyboardManagerForAction)
+                            }
+                        )
+                    }
+
                     if(latinIME.size.value !is FloatingKeyboardSize) {
                         Spacer(Modifier.height(navBarHeight()))
                     }
@@ -1657,6 +1711,7 @@ class UixManager(private val latinIME: LatinIME) {
     }
 
     fun onInputFinishing() {
+        programmerModifiers.clear()
         closeActionWindow()
         languageSwitcherDialog?.dismiss()
         isShowingActionEditor.value = false
