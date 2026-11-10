@@ -70,6 +70,10 @@ jobs:
           yes | "$SDKMANAGER" --licenses > /dev/null || true
           "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" "ndk;28.2.13676358" "cmake;3.22.1"
 
+      - name: Compile stable release Kotlin before signing
+        # Keeps build verification independent of whether Actions secrets are configured.
+        run: ./gradlew compileStableReleaseKotlin --no-daemon --stacktrace
+
       - name: Restore permanent signing key from GitHub secrets
         shell: bash
         env:
