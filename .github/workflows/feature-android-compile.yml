@@ -43,4 +43,4 @@ jobs:
           yes | "$sdkmanager_path" --licenses >/dev/null || true
           "$sdkmanager_path" "platforms;android-35" "build-tools;35.0.0" "ndk;28.2.13676358" "cmake;3.22.1"
       - name: Compile Kotlin and Android tests
-        run: ./gradlew compileStableReleaseKotlin compileStableReleaseAndroidTestKotlin --no-daemon --stacktrace
+        run: ./gradlew compileStableReleaseKotlin compileStableDebugAndroidTestKotlin --no-daemon --stacktrace
