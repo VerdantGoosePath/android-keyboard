@@ -183,6 +183,34 @@ fun keyCodeForCodePoint(codePoint: Int): Pair<Int, Int>? {
     if(codePoint == Constants.CODE_TAB) return KeyEvent.KEYCODE_TAB to 0
     if(codePoint == Constants.CODE_ENTER) return KeyEvent.KEYCODE_ENTER to 0
     if(codePoint == Constants.CODE_SPACE) return KeyEvent.KEYCODE_SPACE to 0
+    // A reliable US keycode fallback for punctuation used in programming shortcuts.
+    // A device's virtual KeyCharacterMap is not guaranteed to describe every symbol.
+    val punctuation = when(codePoint.toChar()) {
+        '-' -> KeyEvent.KEYCODE_MINUS to 0
+        '_' -> KeyEvent.KEYCODE_MINUS to KeyEvent.META_SHIFT_ON
+        '=' -> KeyEvent.KEYCODE_EQUALS to 0
+        '+' -> KeyEvent.KEYCODE_EQUALS to KeyEvent.META_SHIFT_ON
+        '[' -> KeyEvent.KEYCODE_LEFT_BRACKET to 0
+        '{' -> KeyEvent.KEYCODE_LEFT_BRACKET to KeyEvent.META_SHIFT_ON
+        ']' -> KeyEvent.KEYCODE_RIGHT_BRACKET to 0
+        '}' -> KeyEvent.KEYCODE_RIGHT_BRACKET to KeyEvent.META_SHIFT_ON
+        '\\' -> KeyEvent.KEYCODE_BACKSLASH to 0
+        '|' -> KeyEvent.KEYCODE_BACKSLASH to KeyEvent.META_SHIFT_ON
+        ';' -> KeyEvent.KEYCODE_SEMICOLON to 0
+        ':' -> KeyEvent.KEYCODE_SEMICOLON to KeyEvent.META_SHIFT_ON
+        '\'' -> KeyEvent.KEYCODE_APOSTROPHE to 0
+        '"' -> KeyEvent.KEYCODE_APOSTROPHE to KeyEvent.META_SHIFT_ON
+        ',' -> KeyEvent.KEYCODE_COMMA to 0
+        '<' -> KeyEvent.KEYCODE_COMMA to KeyEvent.META_SHIFT_ON
+        '.' -> KeyEvent.KEYCODE_PERIOD to 0
+        '>' -> KeyEvent.KEYCODE_PERIOD to KeyEvent.META_SHIFT_ON
+        '/' -> KeyEvent.KEYCODE_SLASH to 0
+        '?' -> KeyEvent.KEYCODE_SLASH to KeyEvent.META_SHIFT_ON
+        '`' -> KeyEvent.KEYCODE_GRAVE to 0
+        '~' -> KeyEvent.KEYCODE_GRAVE to KeyEvent.META_SHIFT_ON
+        else -> null
+    }
+    if(punctuation != null) return punctuation
     if(!Character.isValidCodePoint(codePoint)) return null
     return try {
         val chars = Character.toChars(codePoint)
