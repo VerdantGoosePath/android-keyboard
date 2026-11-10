@@ -40,6 +40,9 @@ private fun changeCurrentLineIndent(ime: LatinIME, increase: Boolean) {
     if (snap.text.substring(first, last).any { it == '\n' || it == '\r' }) return
     val preceding = snap.text.substring(0, first)
     val lineStart = maxOf(preceding.lastIndexOf('\n'), preceding.lastIndexOf('\r')) + 1
+    // A partial editor snapshot may begin in the middle of a line. Do not edit
+    // an unknown prefix: moving the start of the line would corrupt other text.
+    if (lineStart == 0 && snap.offset > 0) return
     val spaces = ime.getSetting(SmartFormattingSettings.spacesPerTab).coerceIn(1, 16)
     val amount = if (increase) spaces else
         snap.text.substring(lineStart).takeWhile { it == ' ' }.length.coerceAtMost(spaces)
