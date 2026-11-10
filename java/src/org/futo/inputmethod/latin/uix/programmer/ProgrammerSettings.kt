@@ -1,5 +1,7 @@
 package org.futo.inputmethod.latin.uix.programmer
 
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,7 +35,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInParent
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -92,6 +98,7 @@ fun ProgrammerModeSettings(navController: NavHostController) {
     val style = useDataStore(ProgrammerKeyStyle)
     val autoRelease = useDataStore(ProgrammerAutoRelease)
     val enabled = useDataStore(ProgrammerModeEnabled)
+    var rowBounds by remember { mutableStateOf(Rect.Zero) }
     val context = LocalContext.current
     val latestLayout by rememberUpdatedState(layout)
     DisposableEffect(Unit) {
@@ -105,7 +112,14 @@ fun ProgrammerModeSettings(navController: NavHostController) {
         saved.setValue(encodeProgrammerLayout(newLayout))
     }
 
-    ScrollableList {
+    ScrollableList(
+        modifier = Modifier.pointerInput(Unit) {
+            awaitEachGesture {
+                val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                if(!rowBounds.contains(down.position)) selected = null
+            }
+        }
+    ) {
         ScreenTitle(stringResource(R.string.programmer_mode_title), showBack = true, navController = navController)
         SettingToggleRaw(
             title = stringResource(R.string.programmer_mode_enabled),
@@ -122,6 +136,7 @@ fun ProgrammerModeSettings(navController: NavHostController) {
             style = style.value,
             selectedId = selected,
             onSelect = { selected = it },
+            modifier = Modifier.onGloballyPositioned { rowBounds = it.boundsInParent() },
             onResize = { index, right, change ->
                 update(layout.copy(keys = resizeProgrammerKeys(layout.keys, index, right, change)))
             }
