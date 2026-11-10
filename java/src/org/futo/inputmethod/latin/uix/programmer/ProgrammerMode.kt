@@ -185,7 +185,7 @@ fun keyCodeForCodePoint(codePoint: Int): Pair<Int, Int>? {
     if(codePoint == Constants.CODE_SPACE) return KeyEvent.KEYCODE_SPACE to 0
     // A reliable US keycode fallback for punctuation used in programming shortcuts.
     // A device's virtual KeyCharacterMap is not guaranteed to describe every symbol.
-    val punctuation = when(codePoint.toChar()) {
+    val punctuation = when(if(codePoint in 0..127) codePoint.toChar() else Char.MIN_VALUE) {
         '-' -> KeyEvent.KEYCODE_MINUS to 0
         '_' -> KeyEvent.KEYCODE_MINUS to KeyEvent.META_SHIFT_ON
         '=' -> KeyEvent.KEYCODE_EQUALS to 0
