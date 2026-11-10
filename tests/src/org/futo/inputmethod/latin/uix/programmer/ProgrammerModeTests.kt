@@ -41,6 +41,17 @@ class ProgrammerModeTests : AndroidTestCase() {
         assertTrue(resized[2].width > 1f)
     }
 
+    fun testResizeNeverShrinksNeighboursBelowMinimum() {
+        val keys = listOf(
+            ProgrammerKey("selected", width = 1f),
+            ProgrammerKey("narrow", width = 0.25f),
+            ProgrammerKey("wide", width = 4f)
+        )
+        val grown = resizeProgrammerKeys(keys, index = 0, rightEdge = true, deltaFraction = 0.5f)
+        assertTrue(grown.all { it.width >= 0.25f })
+        assertEquals(keys.sumOf { it.width.toDouble() }, grown.sumOf { it.width.toDouble() }, 0.0001)
+    }
+
     fun testNoResizeAtBoundary() {
         val keys = listOf(ProgrammerKey("a"), ProgrammerKey("b"))
         assertEquals(keys, resizeProgrammerKeys(keys, 1, rightEdge = true, deltaFraction = 0.5f))
