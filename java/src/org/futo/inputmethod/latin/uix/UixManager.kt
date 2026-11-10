@@ -136,6 +136,8 @@ import org.futo.inputmethod.latin.uix.programmer.ProgrammerKeyStyle
 import org.futo.inputmethod.latin.uix.programmer.ProgrammerAutoRelease
 import org.futo.inputmethod.latin.uix.programmer.ProgrammerModifiers
 import org.futo.inputmethod.latin.uix.programmer.ProgrammerKeyType
+import org.futo.inputmethod.latin.uix.programmer.ModifierResponse
+import org.futo.inputmethod.latin.uix.programmer.keyCodeForCodePoint
 import org.futo.inputmethod.latin.uix.programmer.ProgrammerRow
 import org.futo.inputmethod.latin.uix.programmer.decodeProgrammerLayout
 import org.futo.inputmethod.latin.uix.programmer.dispatchProgrammerEvent
@@ -627,6 +629,21 @@ class UixManager(private val latinIME: LatinIME) {
             event, programmerModifiers, keyboardManagerForAction,
             latinIME.getSetting(ProgrammerAutoRelease)
         )
+    }
+
+    /** Text-output keys can contain several characters and bypass the ordinary key-code path. */
+    fun onProgrammerTextEvent(text: String): Boolean {
+        if(!latinIME.getSetting(ProgrammerModeEnabled) || !programmerModifiers.anyActive()) return false
+        text.codePoints().toArray().forEach { cp ->
+            val key = keyCodeForCodePoint(cp)
+            if(key != null) {
+                keyboardManagerForAction.sendKeyEvent(key.first, key.second or programmerModifiers.metaState())
+            } else {
+                latinIME.currentInputConnection?.commitText(String(Character.toChars(cp)), 1)
+            }
+        }
+        programmerModifiers.afterNonModifier(latinIME.getSetting(ProgrammerAutoRelease))
+        return true
     }
 
     private var mainKeyboardHidden = mutableStateOf(false)
@@ -1402,7 +1419,9 @@ class UixManager(private val latinIME: LatinIME) {
                             style = programmerStyle,
                             modifiers = programmerModifiers,
                             onKey = { key ->
-                                keyboardManagerForAction.performHapticAndAudioFeedback(Constants.CODE_TAB, composeView ?: return@ProgrammerRow)
+                                composeView?.let {
+                                    keyboardManagerForAction.performHapticAndAudioFeedback(Constants.CODE_TAB, it)
+                                }
                                 sendProgrammerKey(key, programmerModifiers, keyboardManagerForAction, programmerAutoRelease)
                             },
                             onModifierDown = { type ->
@@ -1415,7 +1434,16 @@ class UixManager(private val latinIME: LatinIME) {
                                 programmerModifiers.respond(type, responseFromOrdinal(latinIME.getSetting(tapSetting(type))), keyboardManagerForAction)
                             },
                             onModifierLong = { type ->
-                                programmerModifiers.respond(type, responseFromOrdinal(latinIME.getSetting(holdSetting(type))), keyboardManagerForAction)
+                                val response = responseFromOrdinal(latinIME.getSetting(holdSetting(type)))
+                                if(response == ModifierResponse.Toggle) {
+                                    programmerModifiers.respond(type, response, keyboardManagerForAction)
+                                }
+                            },
+                            onModifierLongRelease = { type ->
+                                val response = responseFromOrdinal(latinIME.getSetting(holdSetting(type)))
+                                if(response == ModifierResponse.Tap) {
+                                    programmerModifiers.respond(type, response, keyboardManagerForAction)
+                                }
                             }
                         )
                     }
