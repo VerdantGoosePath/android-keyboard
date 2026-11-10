@@ -288,8 +288,14 @@ class SwipeDecoderDictionary(val context: Context, val locale: Locale) : Diction
                 Json.parseToJsonElement(it.readText()).jsonObject
             }
             val name = assetName.substringAfterLast('/')
-            val expectedSize = metadata["file_sizes"]?.jsonObject?.get(name)?.jsonPrimitive?.longOrNull
-            val expectedHash = metadata["file_hashes"]?.jsonObject?.get(name)?.jsonPrimitive?.content
+            val metadataSize = metadata["file_sizes"]?.jsonObject?.get(name)?.jsonPrimitive?.longOrNull
+            val metadataHash = metadata["file_hashes"]?.jsonObject?.get(name)?.jsonPrimitive?.content
+            // The pinned chosen_planarian context LM has no hashes in metadata.json.
+            // Use its exact Git LFS pointer (submodule f5ebe55c609c1050c227d383ccc4afacf32a03c4).
+            val usePinnedContextLM = assetName == ENGLISH_LM_ASSET &&
+                metadataSize == null && metadataHash == null
+            val expectedSize = if (usePinnedContextLM) 6247616L else metadataSize
+            val expectedHash = if (usePinnedContextLM) "30aee96265c6f3831ea2536363796bc625b1fe4607e108edaadf936e82da3d3e" else metadataHash
             if (expectedSize == null || expectedHash == null ||
                 !expectedHash.matches(Regex("[a-fA-F0-9]{64}"))) {
                 throw IOException("Missing size or SHA-256 in metadata for $assetName")

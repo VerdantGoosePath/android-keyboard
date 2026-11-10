@@ -40,6 +40,12 @@ def verify_model(read_bytes, model_path):
     basename = model_path.rsplit("/", 1)[1]
     expected_size = metadata.get("file_sizes", {}).get(basename)
     expected_hash = metadata.get("file_hashes", {}).get(basename)
+    # The pinned chosen_planarian context LM omits hashes from metadata.json.
+    # Its Git LFS pointer at f5ebe55c609c1050c227d383ccc4afacf32a03c4 is authoritative.
+    if (model_path == "chosen_planarian/context_lm.pte"
+            and expected_size is None and expected_hash is None):
+        expected_size = 6247616
+        expected_hash = "30aee96265c6f3831ea2536363796bc625b1fe4607e108edaadf936e82da3d3e"
     if not isinstance(expected_size, int) or not isinstance(expected_hash, str) or len(expected_hash) != 64:
         raise ModelVerificationError(f"{model_path}: missing model size or SHA-256 in metadata")
     if len(data) != expected_size:

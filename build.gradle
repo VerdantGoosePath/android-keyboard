@@ -505,6 +505,13 @@ tasks.register('verifySwipeModelAssets') {
             def metadata = new groovy.json.JsonSlurper().parse(metadataFile)
             def expectedSize = metadata.file_sizes?.get(model.name)
             def expectedHash = metadata.file_hashes?.get(model.name)
+            // chosen_planarian has no hashes in metadata.json. These values come from
+            // its pinned Git LFS pointer in submodule f5ebe55c609c1050c227d383ccc4afacf32a03c4.
+            if (relativePath == 'chosen_planarian/context_lm.pte' &&
+                    expectedSize == null && expectedHash == null) {
+                expectedSize = 6247616L
+                expectedHash = '30aee96265c6f3831ea2536363796bc625b1fe4607e108edaadf936e82da3d3e'
+            }
             if (!(expectedSize instanceof Number) || !(expectedHash instanceof String) ||
                     !(expectedHash ==~ /(?i)[0-9a-f]{64}/)) {
                 throw new GradleException("Missing size/SHA-256 metadata for swipe model ${relativePath}")

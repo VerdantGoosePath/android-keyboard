@@ -82,6 +82,13 @@ class SwipeAssetVerificationTests(unittest.TestCase):
                     apk.write(file, "assets/futo-swipe/" + file.relative_to(self.root).as_posix())
         self.assertEqual(3, len(verify_apk(apk_path)))
 
+    def test_pinned_context_lm_without_metadata_hash_checks_integrity(self):
+        self.model = "chosen_planarian/context_lm.pte"
+        self.write_model(self.data)
+        (self.root / "chosen_planarian/metadata.json").write_text('{"kind":"contextlm"}')
+        with self.assertRaisesRegex(ModelVerificationError, "size"):
+            verify_model(lambda name: (self.root / name).read_bytes(), self.model)
+
     def test_missing_optional_model_is_build_failure(self):
         with self.assertRaisesRegex(ModelVerificationError, "missing model"):
             verify_directory(self.root)
