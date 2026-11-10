@@ -107,6 +107,7 @@ fun ProgrammerRow(
     onModifierRelease: ((ProgrammerKeyType) -> Unit)? = null,
     onModifierTap: ((ProgrammerKeyType) -> Unit)? = null,
     onModifierLong: ((ProgrammerKeyType) -> Unit)? = null,
+    onModifierLongRelease: ((ProgrammerKeyType) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var rowWidth by remember { mutableIntStateOf(1) }
@@ -121,6 +122,7 @@ fun ProgrammerRow(
         keys.forEachIndexed { index, key ->
             val isSelected = selectedId == key.id && onSelect != null
             var pressed by remember(key.id) { mutableStateOf(false) }
+            var longPressed by remember(key.id) { mutableStateOf(false) }
             val isEditing = onSelect != null
             val isModifier = isModifier(key.type)
             val density = LocalDensity.current
@@ -131,20 +133,25 @@ fun ProgrammerRow(
                     if(isEditing) {
                         base.clickable { onSelect?.invoke(key.id) }
                     } else {
-                        base.pointerInput(key.id, onKey, onModifierTap, onModifierLong) {
+                        base.pointerInput(key.id, onKey, onModifierTap, onModifierLong, onModifierLongRelease) {
                             detectTapGestures(
                                 onPress = {
                                     pressed = true
+                                    longPressed = false
                                     if(isModifier) onModifierDown?.invoke(key.type)
                                     val released = tryAwaitRelease()
                                     pressed = false
-                                    if(isModifier) onModifierRelease?.invoke(key.type)
+                                    if(isModifier) {
+                                        onModifierRelease?.invoke(key.type)
+                                        if(released && longPressed) onModifierLongRelease?.invoke(key.type)
+                                    }
                                 },
                                 onTap = {
                                     if(isModifier) onModifierTap?.invoke(key.type)
                                     else onKey?.invoke(key)
                                 },
                                 onLongPress = {
+                                    longPressed = true
                                     if(isModifier) onModifierLong?.invoke(key.type)
                                 }
                             )
